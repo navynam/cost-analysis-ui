@@ -1,0 +1,3348 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>견적서 관계도 뷰 - 와이어프레임</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Pretendard', -apple-system, sans-serif; background: #f5f5f7; color: #1d1d1f; }
+
+  /* Sidebar - LNB */
+  .sidebar {
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    width: 260px;
+    background: #1d1d1f;
+    color: #fff;
+    z-index: 50;
+    transform: translateX(-260px);
+    transition: transform 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .sidebar.expanded { transform: translateX(0); }
+
+  .sidebar-header {
+    padding: 16px;
+    border-bottom: 1px solid #333;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 56px;
+    cursor: pointer;
+  }
+  .sidebar-logo-icon {
+    width: 28px; height: 28px;
+    background: #0071e3;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+  .sidebar-logo-text {
+    font-size: 15px;
+    font-weight: 700;
+    white-space: nowrap;
+    opacity: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .sidebar-nav { flex: 1; padding: 8px 0; overflow-y: auto; overflow-x: hidden; }
+  .sidebar-section {
+    padding: 12px 16px 4px;
+    font-size: 10px;
+    font-weight: 600;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    font-size: 13px;
+    color: #a1a1a6;
+    cursor: pointer;
+    transition: all 0.15s;
+    border-left: 3px solid transparent;
+    white-space: nowrap;
+    overflow: hidden;
+    position: relative;
+  }
+  .sidebar-item:hover { background: #2a2a2c; color: #fff; }
+  .sidebar-item.active {
+    background: #2a2a2c;
+    color: #fff;
+    border-left-color: #0071e3;
+  }
+  .sidebar-item-icon {
+    width: 24px;
+    text-align: center;
+    font-size: 17px;
+    flex-shrink: 0;
+  }
+  .sidebar-item-text {
+    opacity: 1;
+    transition: opacity 0.2s;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .sidebar-item-badge {
+    font-size: 10px;
+    padding: 1px 7px;
+    border-radius: 10px;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+  .sidebar-item-badge.blue { background: #0071e3; color: #fff; }
+  .sidebar-item-badge.red { background: #ff3b30; color: #fff; }
+
+  .sidebar-divider {
+    height: 1px;
+    background: #333;
+    margin: 8px 12px;
+  }
+  .sidebar.expanded .sidebar-divider { margin: 8px 20px; }
+
+  .sidebar-footer {
+    padding: 14px 16px;
+    border-top: 1px solid #333;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    overflow: hidden;
+  }
+  .sidebar-avatar {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: #0071e3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+  .sidebar-user-info {
+    font-size: 12px;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .sidebar-user-name { font-weight: 600; }
+  .sidebar-user-role { color: #86868b; font-size: 11px; }
+
+  /* Toggle button */
+  .sidebar-toggle {
+    padding: 10px;
+    border-top: 1px solid #333;
+    display: flex;
+    justify-content: center;
+    cursor: pointer;
+    color: #666;
+    font-size: 14px;
+    transition: all 0.15s;
+  }
+  .sidebar-toggle:hover { color: #fff; background: #2a2a2c; }
+  .sidebar.expanded .sidebar-toggle .toggle-icon { transform: rotate(180deg); }
+  .toggle-icon { transition: transform 0.25s; }
+
+  .sidebar-tooltip { display: none; }
+
+  /* Hamburger */
+  .hamburger {
+    width: 32px; height: 32px;
+    border-radius: 6px;
+    border: 1px solid #e5e5e7;
+    background: #fff;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 6px;
+    flex-shrink: 0;
+  }
+  .hamburger:hover { background: #f5f5f7; }
+  .hamburger span {
+    display: block;
+    width: 16px;
+    height: 2px;
+    background: #1d1d1f;
+    border-radius: 1px;
+  }
+
+  /* Main content offset */
+  .main-wrapper {
+    transition: margin-left 0.3s ease;
+  }
+
+  /* Overlay */
+  .sidebar-overlay.active { display: block; }
+
+  /* Overlay - only on small screens */
+  .sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.3);
+    z-index: 49;
+  }
+
+  /* Header */
+  .header {
+    background: #fff;
+    border-bottom: 1px solid #e5e5e7;
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .header-left { display: flex; align-items: center; gap: 16px; }
+  .header-left h1 { font-size: 16px; font-weight: 600; }
+  .breadcrumb { font-size: 13px; color: #86868b; }
+  .header-right { display: flex; gap: 8px; }
+
+  /* Status Bar */
+  .status-bar {
+    background: #fff;
+    border-bottom: 1px solid #e5e5e7;
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .status-items { display: flex; gap: 24px; }
+  .status-item { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+  .status-item .label { color: #86868b; }
+  .status-item .value { font-weight: 600; }
+  .status-item .value.green { color: #34c759; }
+  .status-item .value.red { color: #ff3b30; }
+  .status-item .value.yellow { color: #ff9500; }
+
+  /* View Tabs */
+  .view-tabs { display: flex; gap: 4px; }
+  .view-tab {
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    border: 1px solid #e5e5e7;
+    background: #fff;
+    color: #86868b;
+  }
+  .view-tab.active {
+    background: #1d1d1f;
+    color: #fff;
+    border-color: #1d1d1f;
+  }
+
+  /* Buttons */
+  .btn {
+    padding: 6px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    border: 1px solid #e5e5e7;
+    background: #fff;
+  }
+  .btn-primary { background: #0071e3; color: #fff; border-color: #0071e3; }
+  .btn-outline { background: transparent; }
+
+  /* Canvas */
+  .canvas-container {
+    position: relative;
+    width: 100%;
+    height: calc(100vh - 130px);
+    overflow: auto;
+    padding: 40px;
+  }
+
+  /* Graph */
+  .graph {
+    position: relative;
+    width: 1500px;
+    height: 900px;
+    margin: 0 auto;
+  }
+
+  /* Node */
+  .node {
+    position: absolute;
+    background: #fff;
+    border: 2px solid #e5e5e7;
+    border-radius: 12px;
+    padding: 16px;
+    width: 260px;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .node:hover {
+    border-color: #0071e3;
+    box-shadow: 0 4px 12px rgba(0,113,227,0.15);
+    transform: translateY(-2px);
+  }
+  .node.root { border-color: #0071e3; border-width: 2px; }
+  .node.has-anomaly { border-color: #ff3b30; }
+  .node.has-warning { border-color: #ff9500; }
+
+  .node-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 10px;
+  }
+  .node-type {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: #f5f5f7;
+    color: #86868b;
+  }
+  .node-type.root-type { background: #e8f4fd; color: #0071e3; }
+  .node-type.sub-type { background: #f0f0f0; color: #666; }
+
+  .node-badge {
+    display: flex;
+    gap: 4px;
+  }
+  .badge {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+  }
+  .badge-ok { background: #d4edda; color: #34c759; }
+  .badge-warn { background: #fff3cd; color: #ff9500; }
+  .badge-error { background: #f8d7da; color: #ff3b30; }
+
+  .node-title {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .node-subtitle {
+    font-size: 12px;
+    color: #86868b;
+    margin-bottom: 12px;
+  }
+
+  .node-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .node-stat {
+    background: #f9f9fb;
+    border-radius: 6px;
+    padding: 8px;
+  }
+  .node-stat .stat-label {
+    font-size: 10px;
+    color: #86868b;
+    margin-bottom: 2px;
+  }
+  .node-stat .stat-value {
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .node-footer {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #f0f0f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .confidence-bar {
+    width: 60px;
+    height: 4px;
+    background: #e5e5e7;
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .confidence-fill {
+    height: 100%;
+    border-radius: 2px;
+  }
+  .confidence-fill.high { background: #34c759; width: 92%; }
+  .confidence-fill.mid { background: #ff9500; width: 75%; }
+  .confidence-fill.low { background: #ff3b30; width: 45%; }
+
+  .node-action {
+    font-size: 11px;
+    color: #0071e3;
+    cursor: pointer;
+    font-weight: 500;
+  }
+
+  /* Connection Lines (SVG) */
+  .connections {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .connection-line {
+    fill: none;
+    stroke: #d2d2d7;
+    stroke-width: 2;
+  }
+  .connection-line.anomaly {
+    stroke: #ff3b30;
+    stroke-dasharray: 6 3;
+  }
+
+  .node { z-index: 1; }
+
+  /* Mini map */
+  .minimap {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 180px;
+    height: 120px;
+    background: #fff;
+    border: 1px solid #e5e5e7;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    padding: 8px;
+  }
+  .minimap-label {
+    font-size: 10px;
+    color: #86868b;
+    margin-bottom: 4px;
+  }
+
+  /* Legend */
+  .legend {
+    position: fixed;
+    bottom: 24px;
+    left: 24px;
+    background: #fff;
+    border: 1px solid #e5e5e7;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    padding: 12px 16px;
+    display: flex;
+    gap: 16px;
+    font-size: 12px;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 2px solid;
+  }
+  .legend-dot.normal { border-color: #0071e3; }
+  .legend-dot.warning { border-color: #ff9500; background: #fff3cd; }
+  .legend-dot.error { border-color: #ff3b30; background: #f8d7da; }
+
+  /* Toolbar */
+  .canvas-toolbar {
+    position: fixed;
+    top: 50%;
+    right: 24px;
+    transform: translateY(-50%);
+    background: #fff;
+    border: 1px solid #e5e5e7;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .toolbar-btn {
+    padding: 10px 12px;
+    border: none;
+    background: #fff;
+    cursor: pointer;
+    font-size: 16px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .toolbar-btn:last-child { border-bottom: none; }
+  .toolbar-btn:hover { background: #f5f5f7; }
+
+  /* Tooltip */
+  .tooltip {
+    position: absolute;
+    top: -8px;
+    right: -220px;
+    width: 200px;
+    background: #1d1d1f;
+    color: #fff;
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 12px;
+    display: none;
+    z-index: 10;
+  }
+  .node:hover .tooltip { display: block; }
+  .tooltip-row { display: flex; justify-content: space-between; margin-bottom: 4px; }
+  .tooltip-label { color: #a1a1a6; }
+
+  /* Expand/Collapse */
+  .expand-btn {
+    position: absolute;
+    bottom: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #fff;
+    border: 2px solid #e5e5e7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    cursor: pointer;
+    z-index: 2;
+  }
+  .expand-btn:hover { border-color: #0071e3; color: #0071e3; }
+
+  /* Annotation */
+  .annotation {
+    position: absolute;
+    background: #fffde7;
+    border: 1px solid #ffe082;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 11px;
+    color: #8d6e0f;
+    max-width: 200px;
+    z-index: 3;
+  }
+  .annotation::before {
+    content: '💡';
+    margin-right: 4px;
+  }
+
+  /* Excel Popup Overlay */
+  .popup-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 100;
+    justify-content: center;
+    align-items: center;
+  }
+  .popup-overlay.active { display: flex; }
+
+  .popup {
+    background: #fff;
+    border-radius: 12px;
+    width: 900px;
+    max-height: 85vh;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    display: flex;
+    flex-direction: column;
+  }
+  .popup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid #e5e5e7;
+    background: #f9f9fb;
+  }
+  .popup-header h2 { font-size: 15px; font-weight: 600; }
+  .popup-header-right { display: flex; align-items: center; gap: 10px; }
+  .popup-close {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    border: none;
+    background: #e5e5e7;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .popup-close:hover { background: #d2d2d7; }
+
+  .popup-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 12px;
+    color: #86868b;
+  }
+  .popup-toolbar-left { display: flex; gap: 12px; align-items: center; }
+  .popup-tab {
+    padding: 4px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    color: #86868b;
+  }
+  .popup-tab.active { background: #1d1d1f; color: #fff; }
+
+  .popup-body {
+    overflow: auto;
+    padding: 0;
+    flex: 1;
+  }
+
+  /* Excel Table */
+  .excel-wrapper {
+    overflow: auto;
+    max-height: 60vh;
+  }
+  .excel-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  .excel-table th,
+  .excel-table td {
+    border: 1px solid #d2d2d7;
+    padding: 6px 10px;
+    text-align: left;
+    white-space: nowrap;
+  }
+  .excel-table thead th {
+    background: #f0f0f2;
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    font-size: 11px;
+    color: #666;
+  }
+  .excel-table .row-header {
+    background: #f9f9fb;
+    font-weight: 600;
+    color: #444;
+    min-width: 40px;
+    text-align: center;
+  }
+  .excel-table .cell-highlight {
+    background: #fff3cd !important;
+    outline: 2px solid #ff9500;
+    outline-offset: -1px;
+  }
+  .excel-table .cell-highlight-green {
+    background: #d4edda !important;
+    outline: 2px solid #34c759;
+    outline-offset: -1px;
+  }
+  .excel-table .cell-highlight-red {
+    background: #f8d7da !important;
+    outline: 2px solid #ff3b30;
+    outline-offset: -1px;
+  }
+  .excel-table .cell-merged {
+    text-align: center;
+    font-weight: 600;
+    background: #f5f5f7;
+  }
+  .excel-table .cell-empty {
+    background: #fafafa;
+  }
+  .excel-table tr:hover td:not(.row-header):not(th) {
+    background: #f0f4ff;
+  }
+
+  /* Highlight indicator */
+  .highlight-legend {
+    display: flex;
+    gap: 16px;
+    padding: 10px 20px;
+    border-top: 1px solid #f0f0f0;
+    font-size: 11px;
+    color: #86868b;
+    background: #f9f9fb;
+  }
+  .hl-item { display: flex; align-items: center; gap: 4px; }
+  .hl-dot { width: 12px; height: 12px; border-radius: 2px; border: 2px solid; }
+  .hl-dot.hl-mapped { background: #d4edda; border-color: #34c759; }
+  .hl-dot.hl-selected { background: #fff3cd; border-color: #ff9500; }
+  .hl-dot.hl-anomaly { background: #f8d7da; border-color: #ff3b30; }
+
+  /* Mapping indicator in popup */
+  .mapping-tag {
+    display: inline-block;
+    font-size: 9px;
+    padding: 1px 5px;
+    border-radius: 3px;
+    margin-left: 4px;
+    font-weight: 600;
+    vertical-align: middle;
+  }
+  .mapping-tag.mapped { background: #d4edda; color: #1b7a3d; }
+  .mapping-tag.anomaly { background: #f8d7da; color: #c62828; }
+
+  /* Standard View Styles */
+  .standard-container {
+    overflow-y: auto;
+    height: calc(100vh - 130px);
+    background: #f5f5f7;
+  }
+  .std-group {
+    background: #fff;
+    border: 1px solid #e5e5e7;
+    border-radius: 10px;
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+  .std-group-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 20px;
+    background: #f9f9fb;
+    border-bottom: 1px solid #e5e5e7;
+  }
+  .std-total-header { background: #f0f4ff; }
+  .std-group-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .std-group-icon {
+    width: 26px; height: 26px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .std-group-summary {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .std-summary-value { font-size: 16px; font-weight: 700; }
+  .std-summary-pct { font-size: 13px; color: #86868b; }
+
+  .std-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  .std-table th {
+    padding: 8px 12px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    color: #86868b;
+    background: #fafafa;
+    border-bottom: 1px solid #e5e5e7;
+  }
+  .std-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .std-table tbody tr:hover { background: #f8f9ff; }
+  .std-table tbody tr:last-child td { border-bottom: none; }
+
+  .std-cell-name { font-weight: 500; }
+  .has-sub {
+    font-size: 10px;
+    color: #0071e3;
+    background: #e8f4fd;
+    padding: 1px 6px;
+    border-radius: 3px;
+    margin-left: 6px;
+    cursor: pointer;
+  }
+  .anomaly-icon { margin-left: 4px; }
+
+  .sub-row td { color: #666; background: #fafcff; }
+  .anomaly-row { background: #fff8f8 !important; }
+  .anomaly-row td { background: #fff8f8; }
+
+  .level-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+  .level-badge.l0 { background: #e8edf3; color: #555; }
+  .level-badge.l1 { background: #dce6f7; color: #0071e3; }
+
+  .mini-confidence {
+    width: 40px;
+    height: 3px;
+    background: #e5e5e7;
+    border-radius: 2px;
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 4px;
+    overflow: hidden;
+  }
+  .mini-bar { height: 100%; border-radius: 2px; }
+
+  .cost-bar {
+    display: flex;
+    height: 8px;
+    background: #e5e5e7;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .cost-fill { height: 100%; }
+
+  /* Insight Studio */
+  .insight-container {
+    display: none;
+    height: 100vh;
+    background: #f5f5f7;
+    flex-direction: column;
+  }
+  .insight-container.active { display: flex; }
+
+  .insight-header-bar {
+    padding: 16px 40px 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #f5f5f7;
+  }
+
+  .insight-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    max-width: 860px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 24px 40px;
+    overflow: hidden;
+  }
+
+  .insight-welcome {
+    text-align: center;
+    padding: 40px 0 24px;
+  }
+  .insight-welcome-icon { font-size: 48px; margin-bottom: 12px; }
+  .insight-welcome-title { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+  .insight-welcome-sub { font-size: 14px; color: #86868b; }
+
+  .insight-suggestions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+  .insight-suggestion {
+    background: #fff;
+    border: 1px solid #e5e5e7;
+    border-radius: 10px;
+    padding: 14px 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .insight-suggestion:hover { border-color: #0071e3; background: #f8fbff; }
+  .insight-suggestion-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+  .insight-suggestion-text { font-size: 13px; color: #444; line-height: 1.4; }
+
+  .chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding-bottom: 16px;
+  }
+
+  .chat-msg {
+    display: flex;
+    gap: 10px;
+    max-width: 85%;
+  }
+  .chat-msg.user { align-self: flex-end; flex-direction: row-reverse; }
+  .chat-msg.ai { align-self: flex-start; }
+
+  .chat-avatar {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+  .chat-avatar.ai-avatar { background: #0071e3; color: #fff; }
+  .chat-avatar.user-avatar { background: #e5e5e7; color: #555; }
+
+  .chat-bubble {
+    padding: 12px 16px;
+    border-radius: 16px;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .chat-msg.ai .chat-bubble {
+    background: #fff;
+    border: 1px solid #e5e5e7;
+    border-top-left-radius: 4px;
+  }
+  .chat-msg.user .chat-bubble {
+    background: #0071e3;
+    color: #fff;
+    border-top-right-radius: 4px;
+  }
+
+  .chat-bubble strong { font-weight: 600; }
+  .chat-bubble .chat-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 8px 0;
+    font-size: 12px;
+  }
+  .chat-bubble .chat-table th,
+  .chat-bubble .chat-table td {
+    padding: 6px 10px;
+    border: 1px solid #e5e5e7;
+    text-align: left;
+  }
+  .chat-bubble .chat-table th { background: #f5f5f7; font-weight: 600; }
+
+  .chat-meta {
+    font-size: 10px;
+    color: #a1a1a6;
+    margin-top: 4px;
+    padding: 0 4px;
+  }
+  .chat-msg.user .chat-meta { text-align: right; }
+
+  .chat-input-area {
+    padding: 16px 0 0;
+    border-top: 1px solid #e5e5e7;
+  }
+  .chat-input-wrap {
+    display: flex;
+    gap: 8px;
+    background: #fff;
+    border: 1px solid #e5e5e7;
+    border-radius: 12px;
+    padding: 4px 4px 4px 16px;
+    align-items: center;
+    transition: border-color 0.2s;
+  }
+  .chat-input-wrap:focus-within { border-color: #0071e3; }
+  .chat-input {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-size: 13px;
+    padding: 10px 0;
+    background: transparent;
+  }
+  .chat-input::placeholder { color: #a1a1a6; }
+  .chat-attach-btn {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 18px;
+    color: #86868b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .chat-attach-btn:hover { background: #f5f5f7; }
+  .chat-send-btn {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    border: none;
+    background: #0071e3;
+    cursor: pointer;
+    font-size: 16px;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .chat-send-btn:hover { background: #005bb5; }
+
+  .chat-context-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-size: 11px;
+  }
+  .context-chip {
+    background: #e8f4fd;
+    color: #0071e3;
+    padding: 4px 10px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    cursor: default;
+  }
+  .context-chip .remove {
+    cursor: pointer;
+    font-size: 12px;
+    opacity: 0.6;
+  }
+  .context-chip .remove:hover { opacity: 1; }
+
+  /* Parsing Page */
+  .parsing-container {
+    display: none;
+    min-height: 100vh;
+    background: #f5f5f7;
+    overflow-y: auto;
+  }
+  .parsing-header-area {
+    padding: 32px 40px 0;
+  }
+  .parsing-title { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+  .parsing-subtitle { font-size: 14px; color: #86868b; margin-bottom: 28px; }
+
+  .parsing-search {
+    display: flex; gap: 10px; margin-bottom: 24px;
+  }
+  .parsing-search-input {
+    flex: 1; padding: 10px 16px; border: 1px solid #e5e5e7; border-radius: 8px;
+    font-size: 13px; background: #fff; outline: none;
+  }
+  .parsing-search-input:focus { border-color: #0071e3; }
+  .parsing-filter-btn {
+    padding: 10px 16px; border: 1px solid #e5e5e7; border-radius: 8px;
+    background: #fff; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px;
+  }
+
+  /* Status cards */
+  .status-cards {
+    display: flex; gap: 12px; margin-bottom: 28px; padding: 0 40px;
+  }
+  .status-card {
+    flex: 1; background: #fff; border: 1px solid #e5e5e7; border-radius: 10px;
+    padding: 16px; cursor: pointer; transition: all 0.2s; text-align: center;
+  }
+  .status-card:hover { border-color: #0071e3; box-shadow: 0 2px 8px rgba(0,113,227,0.1); }
+  .status-card.active { border-color: #0071e3; background: #f0f6ff; }
+  .status-card-count { font-size: 28px; font-weight: 700; margin-bottom: 4px; }
+  .status-card-label { font-size: 12px; color: #86868b; }
+  .sc-all .status-card-count { color: #1d1d1f; }
+  .sc-extracting .status-card-count { color: #ff9500; }
+  .sc-validating .status-card-count { color: #0071e3; }
+  .sc-complete .status-card-count { color: #34c759; }
+  .sc-failed .status-card-count { color: #ff3b30; }
+  .sc-analyzing .status-card-count { color: #af52de; }
+
+  /* File list */
+  .file-list { padding: 0 40px 40px; }
+  .file-table {
+    width: 100%; border-collapse: collapse; background: #fff;
+    border: 1px solid #e5e5e7; border-radius: 10px; overflow: hidden;
+  }
+  .file-table th {
+    padding: 12px 16px; text-align: left; font-size: 11px; font-weight: 600;
+    color: #86868b; background: #f9f9fb; border-bottom: 1px solid #e5e5e7;
+  }
+  .file-table td {
+    padding: 14px 16px; border-bottom: 1px solid #f0f0f0; font-size: 13px;
+  }
+  .file-table tbody tr { cursor: pointer; transition: background 0.15s; }
+  .file-table tbody tr:hover { background: #f8f9ff; }
+  .file-table tbody tr:last-child td { border-bottom: none; }
+
+  .file-name { font-weight: 600; }
+  .file-status {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 12px;
+  }
+  .fs-extracting { background: #fff3cd; color: #b8860b; }
+  .fs-validating { background: #cce5ff; color: #004085; }
+  .fs-complete { background: #d4edda; color: #155724; }
+  .fs-failed { background: #f8d7da; color: #721c24; }
+  .fs-analyzing { background: #e8daef; color: #6c3483; }
+
+  .file-progress {
+    width: 80px; height: 6px; background: #e5e5e7; border-radius: 3px; overflow: hidden;
+  }
+  .file-progress-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
+
+  .file-actions { display: flex; gap: 6px; }
+  .file-action-btn {
+    padding: 4px 10px; border: 1px solid #e5e5e7; border-radius: 6px;
+    background: #fff; font-size: 11px; cursor: pointer; color: #555;
+  }
+  .file-action-btn:hover { border-color: #0071e3; color: #0071e3; }
+  .file-action-btn.primary { background: #0071e3; color: #fff; border-color: #0071e3; }
+  .file-action-btn.disabled { opacity: 0.4; pointer-events: none; }
+
+  /* Upload area */
+  .upload-area {
+    border: 2px dashed #d2d2d7; border-radius: 12px; padding: 48px;
+    text-align: center; margin: 0 40px 28px; background: #fff;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .upload-area:hover { border-color: #0071e3; background: #f8fbff; }
+  .upload-icon { font-size: 40px; margin-bottom: 12px; }
+  .upload-text { font-size: 14px; color: #86868b; margin-bottom: 8px; }
+  .upload-text strong { color: #0071e3; }
+  .upload-formats { font-size: 11px; color: #a1a1a6; }
+
+  /* Detail drawer */
+  .detail-drawer {
+    position: fixed; top: 0; right: 0; bottom: 0; width: 480px;
+    background: #fff; box-shadow: -4px 0 20px rgba(0,0,0,0.1);
+    z-index: 60; transform: translateX(480px); transition: transform 0.3s ease;
+    display: flex; flex-direction: column;
+  }
+  .detail-drawer.open { transform: translateX(0); }
+  .drawer-header {
+    padding: 20px; border-bottom: 1px solid #e5e5e7;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .drawer-body { flex: 1; overflow-y: auto; padding: 20px; }
+  .drawer-section { margin-bottom: 20px; }
+  .drawer-section-title { font-size: 12px; font-weight: 600; color: #86868b; margin-bottom: 8px; }
+  .drawer-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .drawer-info-item { background: #f9f9fb; border-radius: 8px; padding: 10px; }
+  .drawer-info-label { font-size: 10px; color: #86868b; margin-bottom: 2px; }
+  .drawer-info-value { font-size: 13px; font-weight: 600; }
+  .drawer-footer { padding: 16px 20px; border-top: 1px solid #e5e5e7; display: flex; gap: 8px; }
+  .drawer-footer .btn { flex: 1; text-align: center; padding: 10px; }
+
+  .extraction-log {
+    background: #1d1d1f; border-radius: 8px; padding: 12px; font-family: monospace;
+    font-size: 11px; color: #a1a1a6; max-height: 200px; overflow-y: auto;
+  }
+  .log-line { margin-bottom: 4px; }
+  .log-time { color: #666; }
+  .log-ok { color: #34c759; }
+  .log-warn { color: #ff9500; }
+  .log-err { color: #ff3b30; }
+  .log-info { color: #0071e3; }
+
+  .error-box {
+    background: #fff8f8; border: 1px solid #f8d7da; border-radius: 8px; padding: 12px;
+  }
+  .error-title { font-size: 12px; font-weight: 600; color: #ff3b30; margin-bottom: 6px; }
+  .error-detail { font-size: 12px; color: #666; }
+
+  /* List View */
+  .list-container {
+    overflow-y: auto;
+    height: calc(100vh - 130px);
+    background: #f5f5f7;
+    display: none;
+  }
+  .list-group {
+    background: #fff;
+    border: 1px solid #e5e5e7;
+    border-radius: 10px;
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+  .list-row {
+    display: grid;
+    grid-template-columns: 36px 80px 1fr 100px 60px 50px 90px 90px 60px 70px 60px;
+    align-items: center;
+    padding: 10px 16px;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 12px;
+    cursor: default;
+  }
+  .list-row:last-child { border-bottom: none; }
+  .list-row:hover { background: #f8f9ff; }
+  .list-row.anomaly-row { background: #fff8f8; }
+  .list-row.anomaly-row:hover { background: #fff0f0; }
+  .list-row-header {
+    background: #fafafa;
+    font-size: 11px;
+    font-weight: 600;
+    color: #86868b;
+    cursor: default;
+  }
+  .list-row-header:hover { background: #fafafa; }
+
+  .accordion-toggle {
+    width: 22px; height: 22px;
+    border-radius: 4px;
+    border: 1px solid #d2d2d7;
+    background: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    transition: all 0.2s;
+    color: #666;
+  }
+  .accordion-toggle:hover { border-color: #0071e3; color: #0071e3; }
+  .accordion-toggle.open { background: #0071e3; color: #fff; border-color: #0071e3; transform: rotate(90deg); }
+  .accordion-toggle.no-child { visibility: hidden; }
+
+  .accordion-children {
+    display: none;
+    background: #f8faff;
+    border-top: 1px solid #eef0f5;
+  }
+  .accordion-children.open { display: block; }
+  .accordion-children .list-row {
+    padding-left: 52px;
+    background: #f8faff;
+    border-bottom: 1px solid #eef0f5;
+  }
+  .accordion-children .list-row:hover { background: #eff3ff; }
+  .child-connector {
+    color: #0071e3;
+    font-size: 11px;
+    margin-right: 4px;
+  }
+
+  /* Sub-level nested */
+  .accordion-children .accordion-children .list-row {
+    padding-left: 80px;
+    background: #f2f5fc;
+  }
+</style>
+</head>
+<body>
+
+<!-- Sidebar LNB -->
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-logo-icon">AI</div>
+    <span class="sidebar-logo-text">구매원가 AI</span>
+    <button style="margin-left:auto;width:28px;height:28px;border-radius:6px;border:none;background:#333;color:#fff;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;" onclick="toggleSidebar()">✕</button>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="sidebar-section">분석</div>
+    <div class="sidebar-item" data-page="parsing" onclick="switchPage('parsing')">
+      <span class="sidebar-item-icon">📄</span>
+      <span class="sidebar-item-text">파싱</span>
+      <span class="sidebar-item-badge blue">5</span>
+    </div>
+    <div class="sidebar-item active" data-page="verification" onclick="switchPage('verification')">
+      <span class="sidebar-item-icon">✅</span>
+      <span class="sidebar-item-text">검증</span>
+      <span class="sidebar-item-badge red">2</span>
+    </div>
+    <div class="sidebar-item" data-page="insight" onclick="switchPage('insight')">
+      <span class="sidebar-item-icon">💡</span>
+      <span class="sidebar-item-text">인사이트 스튜디오</span>
+      
+    </div>
+
+    <div class="sidebar-divider"></div>
+
+    <div class="sidebar-section">관리</div>
+    <div class="sidebar-item">
+      <span class="sidebar-item-icon">⚙️</span>
+      <span class="sidebar-item-text">구매원가 모델관리</span>
+      
+    </div>
+    <div class="sidebar-item">
+      <span class="sidebar-item-icon">🔧</span>
+      <span class="sidebar-item-text">설정</span>
+      
+    </div>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="sidebar-avatar">HY</div>
+    <div class="sidebar-user-info">
+      <div class="sidebar-user-name">HANY</div>
+      <div class="sidebar-user-role">관리자</div>
+    </div>
+  </div>
+</div>
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-left">
+    <button class="hamburger" onclick="toggleSidebar()"><span></span><span></span><span></span></button>
+    <span class="breadcrumb">검증 ></span>
+    <h1>견적서_2026-02-10_현대모비스</h1>
+  </div>
+  <div class="header-right">
+    <button class="btn btn-outline">초기화</button>
+    <button class="btn btn-outline">저장</button>
+    <button class="btn btn-primary">완료 & 학습</button>
+  </div>
+</div>
+
+<!-- Status Bar -->
+<div class="status-bar">
+  <div class="status-items">
+    <div class="status-item">
+      <span class="label">수정된 항목</span>
+      <span class="value">1개</span>
+    </div>
+    <div class="status-item">
+      <span class="label">신뢰도</span>
+      <span class="value green">92%</span>
+    </div>
+    <div class="status-item">
+      <span class="label">파싱항목</span>
+      <span class="value">24건</span>
+    </div>
+    <div class="status-item">
+      <span class="label">이상치</span>
+      <span class="value red">2건</span>
+    </div>
+    <div class="status-item">
+      <span class="label">하위 견적서</span>
+      <span class="value">3개</span>
+    </div>
+  </div>
+  <div style="display:flex; gap:12px; align-items:center;">
+    <div class="view-tabs">
+      <div class="view-tab">표준</div>
+      <div class="view-tab">리스트</div>
+      <div class="view-tab active">관계도</div>
+    </div>
+    <button class="btn" style="font-size:12px;">📄 원본보기</button>
+  </div>
+</div>
+
+<div class="main-wrapper" id="mainWrapper">
+
+<!-- Insight Studio -->
+<div class="insight-container" id="insightPage">
+  <div class="insight-header-bar">
+    <button class="hamburger" onclick="toggleSidebar()"><span></span><span></span><span></span></button>
+    <span class="breadcrumb" style="font-size:13px;color:#86868b;">인사이트 스튜디오</span>
+  </div>
+
+  <div class="insight-body">
+    <div class="insight-welcome">
+      <div class="insight-welcome-icon">💡</div>
+      <div class="insight-welcome-title">인사이트 스튜디오</div>
+      <div class="insight-welcome-sub">구매원가 데이터를 AI에게 질문하고 인사이트를 얻으세요</div>
+    </div>
+
+    <div class="insight-suggestions">
+      <div class="insight-suggestion" onclick="sendSuggestion(this)">
+        <span class="insight-suggestion-icon">📊</span>
+        <span class="insight-suggestion-text">HEAD LINING 견적서에서 재료비 비중이 높은 항목을 분석해줘</span>
+      </div>
+      <div class="insight-suggestion" onclick="sendSuggestion(this)">
+        <span class="insight-suggestion-icon">🔍</span>
+        <span class="insight-suggestion-text">최근 견적서에서 이상치로 탐지된 항목들을 요약해줘</span>
+      </div>
+      <div class="insight-suggestion" onclick="sendSuggestion(this)">
+        <span class="insight-suggestion-icon">📈</span>
+        <span class="insight-suggestion-text">SKIN 표피재 단가 추이를 과거 견적과 비교해줘</span>
+      </div>
+      <div class="insight-suggestion" onclick="sendSuggestion(this)">
+        <span class="insight-suggestion-icon">💰</span>
+        <span class="insight-suggestion-text">대한(주) 협력사의 가공비 구조가 적정한지 평가해줘</span>
+      </div>
+    </div>
+
+    <!-- Chat Messages -->
+    <div class="chat-messages" id="chatMessages">
+      <!-- Sample conversation -->
+      <div class="chat-msg user">
+        <div class="chat-avatar user-avatar">HY</div>
+        <div>
+          <div class="chat-bubble">HEAD LINING 견적서에서 재료비 비중이 높은 항목을 분석해줘</div>
+          <div class="chat-meta">오후 2:45</div>
+        </div>
+      </div>
+
+      <div class="chat-msg ai">
+        <div class="chat-avatar ai-avatar">AI</div>
+        <div>
+          <div class="chat-bubble">
+            <strong>HEAD LINING 원가계산서 — 재료비 분석</strong><br><br>
+            전체 생산원가 ₩76,800 중 재료비가 <strong>₩45,200 (58.9%)</strong>로 가장 큰 비중을 차지합니다.<br><br>
+            <table class="chat-table">
+              <thead>
+                <tr><th>항목</th><th>금액</th><th>비중</th><th>상태</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>SKIN (표피재)</td><td style="color:#ff3b30;font-weight:600;">₩22,700</td><td>29.6%</td><td>⚠️ 이상치</td></tr>
+                <tr><td>SUBSTRATE (기재)</td><td>₩18,500</td><td>24.1%</td><td>✅ 정상</td></tr>
+                <tr><td>ADHESIVE</td><td>₩2,200</td><td>2.9%</td><td>✅ 정상</td></tr>
+                <tr><td>CLIP + PACKING</td><td>₩1,800</td><td>2.3%</td><td>✅ 정상</td></tr>
+              </tbody>
+            </table>
+            <br>
+            <strong>🔎 주요 인사이트:</strong><br>
+            • SKIN 표피재가 재료비의 <strong>50.2%</strong>를 차지하며, 과거 평균 대비 <strong>+35% 높음</strong><br>
+            • PVC 0.8mm 단가 ₩18,917/M²는 시장 평균(₩14,000~16,000) 대비 상위권<br>
+            • 원자재 가격 인상 또는 협력사 단가 재협상 검토를 권장합니다
+          </div>
+          <div class="chat-meta">오후 2:45 · HEAD_LINING_원가계산서.xlsx 기반</div>
+        </div>
+      </div>
+
+      <div class="chat-msg user">
+        <div class="chat-avatar user-avatar">HY</div>
+        <div>
+          <div class="chat-bubble">SKIN 단가를 시장 평균으로 조정하면 원가가 얼마나 줄어?</div>
+          <div class="chat-meta">오후 2:46</div>
+        </div>
+      </div>
+
+      <div class="chat-msg ai">
+        <div class="chat-avatar ai-avatar">AI</div>
+        <div>
+          <div class="chat-bubble">
+            <strong>SKIN 단가 조정 시뮬레이션</strong><br><br>
+            현재 단가 ₩18,917/M² → 시장 평균 ₩15,000/M²로 조정 시:<br><br>
+            • SKIN 금액: ₩22,700 → <strong style="color:#34c759;">₩18,000</strong> (▼₩4,700)<br>
+            • 재료비 합계: ₩45,200 → <strong style="color:#34c759;">₩40,500</strong><br>
+            • 생산원가: ₩76,800 → <strong style="color:#34c759;">₩72,100</strong><br><br>
+            📉 <strong>₩4,700 절감 (6.1% 감소)</strong><br><br>
+            연간 생산량 10,000대 기준 약 <strong>₩4,700만원</strong> 절감 효과입니다.
+          </div>
+          <div class="chat-meta">오후 2:46 · 시뮬레이션 결과</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chat Input -->
+    <div class="chat-input-area">
+      <div class="chat-context-bar">
+        <div class="context-chip">📄 HEAD_LINING_원가계산서.xlsx <span class="remove">✕</span></div>
+        <div class="context-chip">📄 DOOR_TRIM_견적서.xlsx <span class="remove">✕</span></div>
+      </div>
+      <div class="chat-input-wrap">
+        <input class="chat-input" placeholder="구매원가에 대해 무엇이든 질문하세요..." id="chatInput" />
+        <button class="chat-attach-btn" title="파일 첨부">📎</button>
+        <button class="chat-send-btn" title="전송" onclick="sendChat()">↑</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Parsing Page -->
+<div class="parsing-container" id="parsingPage">
+  <div style="padding:16px 40px 0;display:flex;align-items:center;gap:12px;">
+    <button class="hamburger" onclick="toggleSidebar()"><span></span><span></span><span></span></button>
+    <span class="breadcrumb" style="font-size:13px;color:#86868b;">파싱</span>
+  </div>
+  <div class="parsing-header-area">
+    <div class="parsing-title">어떤 파일을 분석 할까요?</div>
+    <div class="parsing-subtitle">파일을 업로드 하시면 자동으로 분석을 시작해요</div>
+    <div class="parsing-search">
+      <input class="parsing-search-input" placeholder="문서명으로 검색해 보세요." />
+      <button class="parsing-filter-btn">🔍 상세조회</button>
+    </div>
+  </div>
+
+  <!-- Upload Area -->
+  <div class="upload-area" id="uploadArea">
+    <div class="upload-icon">📁</div>
+    <div class="upload-text">파일을 드래그하거나 <strong>클릭하여 업로드</strong></div>
+    <div class="upload-formats">지원 형식: xls, xlsx, 이미지(jpg, png) · 최대 50MB</div>
+  </div>
+
+  <!-- Status Cards -->
+  <div class="status-cards">
+    <div class="status-card sc-all active" onclick="filterFiles('all')">
+      <div class="status-card-count">5</div>
+      <div class="status-card-label">전체파일</div>
+    </div>
+    <div class="status-card sc-extracting" onclick="filterFiles('extracting')">
+      <div class="status-card-count">1</div>
+      <div class="status-card-label">추출중</div>
+    </div>
+    <div class="status-card sc-complete" onclick="filterFiles('complete')">
+      <div class="status-card-count">2</div>
+      <div class="status-card-label">추출완료</div>
+    </div>
+    <div class="status-card sc-failed" onclick="filterFiles('failed')">
+      <div class="status-card-count">1</div>
+      <div class="status-card-label">추출실패</div>
+    </div>
+    <div class="status-card sc-analyzing" onclick="filterFiles('analyzing')">
+      <div class="status-card-count">1</div>
+      <div class="status-card-label">분석완료</div>
+    </div>
+  </div>
+
+  <!-- File List -->
+  <div class="file-list">
+    <table class="file-table">
+      <thead>
+        <tr>
+          <th style="width:30px;"></th>
+          <th>문서명</th>
+          <th style="width:100px;">상태</th>
+          <th style="width:100px;">진행률</th>
+          <th style="width:80px;">파싱항목</th>
+          <th style="width:80px;">이상치</th>
+          <th style="width:100px;">업로드일</th>
+          <th style="width:160px;">액션</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- 1. 추출중 -->
+        <tr class="file-row" data-status="extracting" onclick="openDrawer('extracting')">
+          <td>📄</td>
+          <td class="file-name">CONSOLE_BOX_원가명세.xlsx</td>
+          <td><span class="file-status fs-extracting">⏳ 추출중</span></td>
+          <td>
+            <div class="file-progress"><div class="file-progress-fill" style="width:65%;background:#ff9500;"></div></div>
+            <span style="font-size:11px;color:#86868b;">65%</span>
+          </td>
+          <td style="color:#86868b;">—</td>
+          <td style="color:#86868b;">—</td>
+          <td>2026-02-19</td>
+          <td class="file-actions">
+            <button class="file-action-btn disabled">분석이력보기</button>
+            <button class="file-action-btn disabled">문서상세보기</button>
+          </td>
+        </tr>
+        <!-- 2. 추출완료 -->
+        <tr class="file-row" data-status="complete" onclick="openDrawer('complete')">
+          <td>📄</td>
+          <td class="file-name">HEAD_LINING_원가계산서.xlsx</td>
+          <td><span class="file-status fs-complete">✅ 추출완료</span></td>
+          <td>
+            <div class="file-progress"><div class="file-progress-fill" style="width:100%;background:#34c759;"></div></div>
+            <span style="font-size:11px;color:#86868b;">100%</span>
+          </td>
+          <td>24건</td>
+          <td><span style="color:#ff3b30;font-weight:600;">2건</span></td>
+          <td>2026-02-18</td>
+          <td class="file-actions">
+            <button class="file-action-btn">분석이력보기</button>
+            <button class="file-action-btn primary" onclick="event.stopPropagation(); switchPage('verification')">문서상세보기</button>
+          </td>
+        </tr>
+        <!-- 3. 추출완료 -->
+        <tr class="file-row" data-status="complete" onclick="openDrawer('complete2')">
+          <td>📄</td>
+          <td class="file-name">DOOR_TRIM_견적서.xlsx</td>
+          <td><span class="file-status fs-complete">✅ 추출완료</span></td>
+          <td>
+            <div class="file-progress"><div class="file-progress-fill" style="width:100%;background:#34c759;"></div></div>
+            <span style="font-size:11px;color:#86868b;">100%</span>
+          </td>
+          <td>18건</td>
+          <td><span style="color:#86868b;">0건</span></td>
+          <td>2026-02-17</td>
+          <td class="file-actions">
+            <button class="file-action-btn">분석이력보기</button>
+            <button class="file-action-btn primary">문서상세보기</button>
+          </td>
+        </tr>
+        <!-- 4. 추출실패 -->
+        <tr class="file-row" data-status="failed" onclick="openDrawer('failed')">
+          <td>📄</td>
+          <td class="file-name">SEAT_COVER_원가분석.xlsx</td>
+          <td><span class="file-status fs-failed">❌ 추출실패</span></td>
+          <td>
+            <div class="file-progress"><div class="file-progress-fill" style="width:30%;background:#ff3b30;"></div></div>
+            <span style="font-size:11px;color:#86868b;">30%</span>
+          </td>
+          <td style="color:#86868b;">—</td>
+          <td style="color:#86868b;">—</td>
+          <td>2026-02-16</td>
+          <td class="file-actions">
+            <button class="file-action-btn" style="color:#ff3b30;border-color:#ff3b30;">실패사유</button>
+            <button class="file-action-btn">재시도</button>
+          </td>
+        </tr>
+        <!-- 5. 분석완료 -->
+        <tr class="file-row" data-status="analyzing" onclick="openDrawer('analyzed')">
+          <td>📄</td>
+          <td class="file-name">BUMPER_ASSY_Q4견적.xlsx</td>
+          <td><span class="file-status fs-analyzing">🟣 분석완료</span></td>
+          <td>
+            <div class="file-progress"><div class="file-progress-fill" style="width:100%;background:#af52de;"></div></div>
+            <span style="font-size:11px;color:#86868b;">100%</span>
+          </td>
+          <td>32건</td>
+          <td><span style="color:#86868b;">0건</span></td>
+          <td>2026-02-15</td>
+          <td class="file-actions">
+            <button class="file-action-btn">분석이력보기</button>
+            <button class="file-action-btn primary">문서상세보기</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Detail Drawer -->
+<div class="detail-drawer" id="detailDrawer">
+  <!-- Extracting state -->
+  <div id="drawer-extracting" style="display:none;flex-direction:column;height:100%;">
+    <div class="drawer-header">
+      <div>
+        <div style="font-size:15px;font-weight:600;">CONSOLE_BOX_원가명세.xlsx</div>
+        <div style="font-size:12px;color:#86868b;margin-top:2px;">추출 진행중...</div>
+      </div>
+      <button class="popup-close" onclick="closeDrawer()">✕</button>
+    </div>
+    <div class="drawer-body">
+      <div class="drawer-section">
+        <div class="drawer-section-title">파일 정보</div>
+        <div class="drawer-info-grid">
+          <div class="drawer-info-item"><div class="drawer-info-label">파일 크기</div><div class="drawer-info-value">2.4 MB</div></div>
+          <div class="drawer-info-item"><div class="drawer-info-label">시트 수</div><div class="drawer-info-value">3개</div></div>
+          <div class="drawer-info-item"><div class="drawer-info-label">업로드 시간</div><div class="drawer-info-value">14:32:15</div></div>
+          <div class="drawer-info-item"><div class="drawer-info-label">예상 완료</div><div class="drawer-info-value">~2분</div></div>
+        </div>
+      </div>
+      <div class="drawer-section">
+        <div class="drawer-section-title">추출 진행 상황</div>
+        <div style="margin-bottom:12px;">
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;">
+            <span>전체 진행률</span><span style="font-weight:600;color:#ff9500;">65%</span>
+          </div>
+          <div class="file-progress" style="width:100%;height:8px;">
+            <div class="file-progress-fill" style="width:65%;background:linear-gradient(90deg,#ff9500,#ffb340);"></div>
+          </div>
+        </div>
+        <div style="font-size:12px;color:#86868b;display:flex;flex-direction:column;gap:6px;">
+          <div>✅ Sheet 1 — 구조 분석 완료</div>
+          <div>✅ Sheet 2 — 셀 매핑 완료</div>
+          <div>⏳ Sheet 3 — 데이터 검증 중...</div>
+        </div>
+      </div>
+      <div class="drawer-section">
+        <div class="drawer-section-title">추출 로그</div>
+        <div class="extraction-log">
+          <div class="log-line"><span class="log-time">14:32:16</span> <span class="log-info">파일 업로드 완료 (2.4MB)</span></div>
+          <div class="log-line"><span class="log-time">14:32:18</span> <span class="log-ok">Sheet 1 구조 분석 시작</span></div>
+          <div class="log-line"><span class="log-time">14:32:45</span> <span class="log-ok">Sheet 1 파싱 완료 — 12개 항목 추출</span></div>
+          <div class="log-line"><span class="log-time">14:32:46</span> <span class="log-ok">Sheet 2 구조 분석 시작</span></div>
+          <div class="log-line"><span class="log-time">14:33:10</span> <span class="log-warn">Sheet 2 병합셀 감지 — 자동 분리</span></div>
+          <div class="log-line"><span class="log-time">14:33:22</span> <span class="log-ok">Sheet 2 파싱 완료 — 8개 항목 추출</span></div>
+          <div class="log-line"><span class="log-time">14:33:23</span> <span class="log-info">Sheet 3 데이터 검증 중...</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Complete state -->
+  <div id="drawer-complete" style="display:none;flex-direction:column;height:100%;">
+    <div class="drawer-header">
+      <div>
+        <div style="font-size:15px;font-weight:600;">HEAD_LINING_원가계산서.xlsx</div>
+        <div style="font-size:12px;color:#34c759;margin-top:2px;">✅ 추출 완료</div>
+      </div>
+      <button class="popup-close" onclick="closeDrawer()">✕</button>
+    </div>
+    <div class="drawer-body">
+      <div class="drawer-section">
+        <div class="drawer-section-title">추출 결과 요약</div>
+        <div class="drawer-info-grid">
+          <div class="drawer-info-item"><div class="drawer-info-label">파싱 항목</div><div class="drawer-info-value" style="color:#0071e3;">24건</div></div>
+          <div class="drawer-info-item"><div class="drawer-info-label">이상치</div><div class="drawer-info-value" style="color:#ff3b30;">2건</div></div>
+          <div class="drawer-info-item"><div class="drawer-info-label">신뢰도</div><div class="drawer-info-value" style="color:#34c759;">92%</div></div>
+          <div class="drawer-info-item"><div class="drawer-info-label">소요시간</div><div class="drawer-info-value">1분 48초</div></div>
+        </div>
+      </div>
+      <div class="drawer-section">
+        <div class="drawer-section-title">파일 정보</div>
+        <div class="drawer-info-grid">
+          <div class="drawer-info-item"><div class="drawer-info-label">파일 크기</div><div class="drawer-info-value">1.8 MB</div></div>
+          <div class="drawer-info-item"><div class="drawer-info-label">시트 수</div><div class="drawer-info-value">2개</div></div>
+          <div class="drawer-info-item"><div class="drawer-info-label">협력사</div><div class="drawer-info-value">대한(주)</div></div>
+          <div class="drawer-info-item"><div class="drawer-info-label">품명</div><div class="drawer-info-value">HEAD LINING</div></div>
+        </div>
+      </div>
+      <div class="drawer-section">
+        <div class="drawer-section-title">추출 로그</div>
+        <div class="extraction-log">
+          <div class="log-line"><span class="log-time">10:15:02</span> <span class="log-info">파일 업로드 완료 (1.8MB)</span></div>
+          <div class="log-line"><span class="log-time">10:15:04</span> <span class="log-ok">Sheet 1 구조 분석 시작</span></div>
+          <div class="log-line"><span class="log-time">10:15:38</span> <span class="log-ok">Sheet 1 파싱 완료 — 18개 항목</span></div>
+          <div class="log-line"><span class="log-time">10:15:39</span> <span class="log-ok">Sheet 2 파싱 완료 — 6개 항목</span></div>
+          <div class="log-line"><span class="log-time">10:16:50</span> <span class="log-warn">이상치 2건 감지</span></div>
+          <div class="log-line"><span class="log-time">10:16:50</span> <span class="log-ok">추출 완료 — 총 24건</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="drawer-footer">
+      <button class="btn btn-outline" style="flex:1;text-align:center;padding:10px;">분석이력보기</button>
+      <button class="btn btn-primary" style="flex:1;text-align:center;padding:10px;" onclick="closeDrawer(); switchPage('verification')">문서상세보기</button>
+    </div>
+  </div>
+
+  <!-- Failed state -->
+  <div id="drawer-failed" style="display:none;flex-direction:column;height:100%;">
+    <div class="drawer-header">
+      <div>
+        <div style="font-size:15px;font-weight:600;">SEAT_COVER_원가분석.xlsx</div>
+        <div style="font-size:12px;color:#ff3b30;margin-top:2px;">❌ 추출 실패</div>
+      </div>
+      <button class="popup-close" onclick="closeDrawer()">✕</button>
+    </div>
+    <div class="drawer-body">
+      <div class="drawer-section">
+        <div class="drawer-section-title">실패 정보</div>
+        <div class="error-box">
+          <div class="error-title">⚠️ 파싱 오류 — 양식 인식 실패</div>
+          <div class="error-detail">
+            Sheet 1의 셀 구조를 인식할 수 없습니다.<br>
+            원인: 병합 셀이 다중 중첩(3단계 이상)되어 있어 자동 파싱에 실패했습니다.<br><br>
+            <strong>권장 조치:</strong><br>
+            • 엑셀 파일에서 불필요한 병합 셀 해제 후 재업로드<br>
+            • 수동 매핑 모드로 전환하여 직접 영역 지정
+          </div>
+        </div>
+      </div>
+      <div class="drawer-section">
+        <div class="drawer-section-title">파일 정보</div>
+        <div class="drawer-info-grid">
+          <div class="drawer-info-item"><div class="drawer-info-label">파일 크기</div><div class="drawer-info-value">3.1 MB</div></div>
+          <div class="drawer-info-item"><div class="drawer-info-label">시트 수</div><div class="drawer-info-value">4개</div></div>
+          <div class="drawer-info-item"><div class="drawer-info-label">실패 시점</div><div class="drawer-info-value">Sheet 1, Row 15</div></div>
+          <div class="drawer-info-item"><div class="drawer-info-label">진행률</div><div class="drawer-info-value" style="color:#ff3b30;">30%</div></div>
+        </div>
+      </div>
+      <div class="drawer-section">
+        <div class="drawer-section-title">추출 로그</div>
+        <div class="extraction-log">
+          <div class="log-line"><span class="log-time">09:20:01</span> <span class="log-info">파일 업로드 완료 (3.1MB)</span></div>
+          <div class="log-line"><span class="log-time">09:20:03</span> <span class="log-ok">Sheet 1 구조 분석 시작</span></div>
+          <div class="log-line"><span class="log-time">09:20:15</span> <span class="log-warn">병합 셀 다중 중첩 감지 (A5:H20)</span></div>
+          <div class="log-line"><span class="log-time">09:20:28</span> <span class="log-err">ERROR: 셀 구조 인식 실패 — Row 15 병합 충돌</span></div>
+          <div class="log-line"><span class="log-time">09:20:28</span> <span class="log-err">추출 중단</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="drawer-footer">
+      <button class="btn btn-outline" style="flex:1;text-align:center;padding:10px;">수동 매핑</button>
+      <button class="btn btn-primary" style="flex:1;text-align:center;padding:10px;">재시도</button>
+    </div>
+  </div>
+</div>
+<div class="sidebar-overlay" id="drawerOverlay" onclick="closeDrawer()" style="display:none;z-index:59;"></div>
+
+<!-- Verification Page wrapper -->
+<div id="verificationPage">
+
+<!-- Standard View -->
+<div class="standard-container" id="standardView" style="display:none;">
+  <div style="padding:24px;">
+
+    <!-- 문서 요약 -->
+    <div style="display:flex;gap:16px;margin-bottom:24px;">
+      <div style="background:#fff;border:1px solid #e5e5e7;border-radius:10px;padding:16px;flex:1;">
+        <div style="font-size:11px;color:#86868b;margin-bottom:4px;">E.O. NO.</div>
+        <div style="font-size:14px;font-weight:600;">EO-2024-1201</div>
+      </div>
+      <div style="background:#fff;border:1px solid #e5e5e7;border-radius:10px;padding:16px;flex:1;">
+        <div style="font-size:11px;color:#86868b;margin-bottom:4px;">품번 / 품명</div>
+        <div style="font-size:14px;font-weight:600;">HL-2024-001 · COMPLETE ASSY-HEAD LINING</div>
+      </div>
+      <div style="background:#fff;border:1px solid #e5e5e7;border-radius:10px;padding:16px;flex:1;">
+        <div style="font-size:11px;color:#86868b;margin-bottom:4px;">협력사 / 담당자</div>
+        <div style="font-size:14px;font-weight:600;">대한(주) · 김철수</div>
+      </div>
+      <div style="background:#fff;border:1px solid #e5e5e7;border-radius:10px;padding:16px;flex:0 0 140px;">
+        <div style="font-size:11px;color:#86868b;margin-bottom:4px;">생산원가</div>
+        <div style="font-size:18px;font-weight:700;color:#0071e3;">₩76,800</div>
+      </div>
+    </div>
+
+    <!-- 재료비 그룹 -->
+    <div class="std-group">
+      <div class="std-group-header">
+        <div class="std-group-title">
+          <span class="std-group-icon" style="background:#e8f4fd;color:#0071e3;">Ⅰ</span>
+          재료비
+        </div>
+        <div class="std-group-summary">
+          <span class="std-summary-value">₩45,200</span>
+          <span class="std-summary-pct">58.9%</span>
+          <span class="badge badge-error" style="font-size:10px;">이상치 1</span>
+        </div>
+      </div>
+      <table class="std-table">
+        <thead>
+          <tr>
+            <th style="width:50px;">레벨</th>
+            <th style="width:80px;">구분</th>
+            <th>품명</th>
+            <th>규격</th>
+            <th style="width:50px;">단위</th>
+            <th style="width:50px;">수량</th>
+            <th style="width:90px;">단가</th>
+            <th style="width:90px;">금액</th>
+            <th style="width:60px;">비율</th>
+            <th style="width:70px;">신뢰도</th>
+            <th style="width:60px;">상태</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="level-badge l0">L0</span></td>
+            <td>원자재</td>
+            <td class="std-cell-name">SUBSTRATE (기재) <span class="has-sub">📎 하위 견적서</span></td>
+            <td>1200×800×3T</td>
+            <td>EA</td>
+            <td>1</td>
+            <td>18,500</td>
+            <td style="font-weight:600;">18,500</td>
+            <td>24.1%</td>
+            <td><div class="mini-confidence"><div class="mini-bar" style="width:95%;background:#34c759;"></div></div><span style="font-size:10px;">95%</span></td>
+            <td><span class="badge badge-ok">정상</span></td>
+          </tr>
+          <tr class="sub-row">
+            <td><span class="level-badge l1">L1</span></td>
+            <td style="color:#86868b;">원자재</td>
+            <td class="std-cell-name" style="padding-left:28px;">└ BASE MATERIAL</td>
+            <td>PP+GF30</td>
+            <td>KG</td>
+            <td>2.4</td>
+            <td>5,000</td>
+            <td>12,000</td>
+            <td>15.6%</td>
+            <td><div class="mini-confidence"><div class="mini-bar" style="width:94%;background:#34c759;"></div></div><span style="font-size:10px;">94%</span></td>
+            <td><span class="badge badge-ok">정상</span></td>
+          </tr>
+          <tr class="sub-row">
+            <td><span class="level-badge l1">L1</span></td>
+            <td style="color:#86868b;">가공비</td>
+            <td class="std-cell-name" style="padding-left:28px;">└ 압출 성형</td>
+            <td></td>
+            <td>회</td>
+            <td>1</td>
+            <td>6,500</td>
+            <td>6,500</td>
+            <td>8.5%</td>
+            <td><div class="mini-confidence"><div class="mini-bar" style="width:94%;background:#34c759;"></div></div><span style="font-size:10px;">94%</span></td>
+            <td><span class="badge badge-ok">정상</span></td>
+          </tr>
+          <tr class="anomaly-row">
+            <td><span class="level-badge l0">L0</span></td>
+            <td>원자재</td>
+            <td class="std-cell-name">SKIN (표피재) <span class="anomaly-icon">⚠️</span></td>
+            <td>PVC 0.8mm</td>
+            <td>M²</td>
+            <td>1.2</td>
+            <td>18,917</td>
+            <td style="font-weight:600;color:#ff3b30;">22,700</td>
+            <td>29.6%</td>
+            <td><div class="mini-confidence"><div class="mini-bar" style="width:75%;background:#ff9500;"></div></div><span style="font-size:10px;color:#ff9500;">75%</span></td>
+            <td><span class="badge badge-error">이상치</span></td>
+          </tr>
+          <tr>
+            <td><span class="level-badge l0">L0</span></td>
+            <td>원자재</td>
+            <td class="std-cell-name">ADHESIVE (접착제)</td>
+            <td>WATER BASE</td>
+            <td>KG</td>
+            <td>0.5</td>
+            <td>4,400</td>
+            <td style="font-weight:600;">2,200</td>
+            <td>2.9%</td>
+            <td><div class="mini-confidence"><div class="mini-bar" style="width:98%;background:#34c759;"></div></div><span style="font-size:10px;">98%</span></td>
+            <td><span class="badge badge-ok">정상</span></td>
+          </tr>
+          <tr>
+            <td><span class="level-badge l0">L0</span></td>
+            <td>부자재</td>
+            <td class="std-cell-name">CLIP</td>
+            <td>PA66</td>
+            <td>EA</td>
+            <td>12</td>
+            <td>75</td>
+            <td>900</td>
+            <td>1.2%</td>
+            <td><div class="mini-confidence"><div class="mini-bar" style="width:98%;background:#34c759;"></div></div><span style="font-size:10px;">98%</span></td>
+            <td><span class="badge badge-ok">정상</span></td>
+          </tr>
+          <tr>
+            <td><span class="level-badge l0">L0</span></td>
+            <td>부자재</td>
+            <td class="std-cell-name">PACKING (포장재)</td>
+            <td>골판지</td>
+            <td>SET</td>
+            <td>1</td>
+            <td>900</td>
+            <td>900</td>
+            <td>1.2%</td>
+            <td><div class="mini-confidence"><div class="mini-bar" style="width:98%;background:#34c759;"></div></div><span style="font-size:10px;">98%</span></td>
+            <td><span class="badge badge-ok">정상</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 가공비 그룹 -->
+    <div class="std-group">
+      <div class="std-group-header">
+        <div class="std-group-title">
+          <span class="std-group-icon" style="background:#e8fde8;color:#34c759;">Ⅱ</span>
+          가공비
+        </div>
+        <div class="std-group-summary">
+          <span class="std-summary-value">₩23,100</span>
+          <span class="std-summary-pct">30.1%</span>
+        </div>
+      </div>
+      <table class="std-table">
+        <thead>
+          <tr>
+            <th style="width:50px;">레벨</th>
+            <th style="width:80px;">공정</th>
+            <th>공정명</th>
+            <th>규격</th>
+            <th style="width:50px;">단위</th>
+            <th style="width:50px;">수량</th>
+            <th style="width:90px;">단가</th>
+            <th style="width:90px;">금액</th>
+            <th style="width:60px;">비율</th>
+            <th style="width:70px;">신뢰도</th>
+            <th style="width:60px;">상태</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="level-badge l0">L0</span></td>
+            <td>성형</td>
+            <td class="std-cell-name">프레스 성형</td>
+            <td></td>
+            <td>회</td>
+            <td>1</td>
+            <td>8,500</td>
+            <td style="font-weight:600;">8,500</td>
+            <td>11.1%</td>
+            <td><div class="mini-confidence"><div class="mini-bar" style="width:96%;background:#34c759;"></div></div><span style="font-size:10px;">96%</span></td>
+            <td><span class="badge badge-ok">정상</span></td>
+          </tr>
+          <tr>
+            <td><span class="level-badge l0">L0</span></td>
+            <td>접착</td>
+            <td class="std-cell-name">접착 공정</td>
+            <td></td>
+            <td>회</td>
+            <td>1</td>
+            <td>6,200</td>
+            <td style="font-weight:600;">6,200</td>
+            <td>8.1%</td>
+            <td><div class="mini-confidence"><div class="mini-bar" style="width:94%;background:#34c759;"></div></div><span style="font-size:10px;">94%</span></td>
+            <td><span class="badge badge-ok">정상</span></td>
+          </tr>
+          <tr>
+            <td><span class="level-badge l0">L0</span></td>
+            <td>후처리</td>
+            <td class="std-cell-name">트리밍</td>
+            <td></td>
+            <td>회</td>
+            <td>1</td>
+            <td>5,400</td>
+            <td style="font-weight:600;">5,400</td>
+            <td>7.0%</td>
+            <td><div class="mini-confidence"><div class="mini-bar" style="width:92%;background:#34c759;"></div></div><span style="font-size:10px;">92%</span></td>
+            <td><span class="badge badge-ok">정상</span></td>
+          </tr>
+          <tr>
+            <td><span class="level-badge l0">L0</span></td>
+            <td>검사</td>
+            <td class="std-cell-name">검사/포장</td>
+            <td></td>
+            <td>회</td>
+            <td>1</td>
+            <td>3,000</td>
+            <td style="font-weight:600;">3,000</td>
+            <td>3.9%</td>
+            <td><div class="mini-confidence"><div class="mini-bar" style="width:90%;background:#34c759;"></div></div><span style="font-size:10px;">90%</span></td>
+            <td><span class="badge badge-ok">정상</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 제경비 그룹 -->
+    <div class="std-group">
+      <div class="std-group-header">
+        <div class="std-group-title">
+          <span class="std-group-icon" style="background:#fde8e8;color:#ff3b30;">Ⅲ</span>
+          제경비
+        </div>
+        <div class="std-group-summary">
+          <span class="std-summary-value">₩8,500</span>
+          <span class="std-summary-pct">11.1%</span>
+          <span class="badge badge-error" style="font-size:10px;">이상치 1</span>
+        </div>
+      </div>
+      <table class="std-table">
+        <thead>
+          <tr>
+            <th style="width:50px;">레벨</th>
+            <th style="width:80px;">구분</th>
+            <th>항목</th>
+            <th colspan="4"></th>
+            <th style="width:90px;">금액</th>
+            <th style="width:60px;">비율</th>
+            <th style="width:70px;">신뢰도</th>
+            <th style="width:60px;">상태</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="level-badge l0">L0</span></td>
+            <td>감가상각</td>
+            <td class="std-cell-name">감가상각비</td>
+            <td colspan="4"></td>
+            <td style="font-weight:600;">3,200</td>
+            <td>4.2%</td>
+            <td><div class="mini-confidence"><div class="mini-bar" style="width:90%;background:#34c759;"></div></div><span style="font-size:10px;">90%</span></td>
+            <td><span class="badge badge-ok">정상</span></td>
+          </tr>
+          <tr>
+            <td><span class="level-badge l0">L0</span></td>
+            <td>유틸리티</td>
+            <td class="std-cell-name">전력비</td>
+            <td colspan="4"></td>
+            <td style="font-weight:600;">2,800</td>
+            <td>3.6%</td>
+            <td><div class="mini-confidence"><div class="mini-bar" style="width:88%;background:#34c759;"></div></div><span style="font-size:10px;">88%</span></td>
+            <td><span class="badge badge-ok">정상</span></td>
+          </tr>
+          <tr class="anomaly-row">
+            <td><span class="level-badge l0">L0</span></td>
+            <td>기타</td>
+            <td class="std-cell-name">기타 경비 <span class="anomaly-icon">⚠️</span></td>
+            <td colspan="4"></td>
+            <td style="font-weight:600;color:#ff3b30;">2,500</td>
+            <td>3.3%</td>
+            <td><div class="mini-confidence"><div class="mini-bar" style="width:72%;background:#ff9500;"></div></div><span style="font-size:10px;color:#ff9500;">72%</span></td>
+            <td><span class="badge badge-error">이상치</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 소계 그룹 -->
+    <div class="std-group">
+      <div class="std-group-header std-total-header">
+        <div class="std-group-title">
+          <span class="std-group-icon" style="background:#1d1d1f;color:#fff;">Σ</span>
+          소계 (생산원가)
+        </div>
+        <div class="std-group-summary">
+          <span class="std-summary-value" style="font-size:18px;color:#0071e3;">₩76,800</span>
+          <span class="std-summary-pct">100%</span>
+        </div>
+      </div>
+      <table class="std-table">
+        <thead>
+          <tr>
+            <th>구분</th>
+            <th style="width:120px;">금액</th>
+            <th style="width:80px;">비율</th>
+            <th style="width:200px;">구성</th>
+            <th style="width:80px;">이상치</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="font-weight:600;">Ⅰ. 재료비</td>
+            <td style="font-weight:600;">₩45,200</td>
+            <td>58.9%</td>
+            <td>
+              <div class="cost-bar">
+                <div class="cost-fill" style="width:58.9%;background:#0071e3;"></div>
+              </div>
+            </td>
+            <td><span style="color:#ff3b30;font-weight:600;">1건</span></td>
+          </tr>
+          <tr>
+            <td style="font-weight:600;">Ⅱ. 가공비</td>
+            <td style="font-weight:600;">₩23,100</td>
+            <td>30.1%</td>
+            <td>
+              <div class="cost-bar">
+                <div class="cost-fill" style="width:30.1%;background:#34c759;"></div>
+              </div>
+            </td>
+            <td><span style="color:#86868b;">0건</span></td>
+          </tr>
+          <tr>
+            <td style="font-weight:600;">Ⅲ. 제경비</td>
+            <td style="font-weight:600;">₩8,500</td>
+            <td>11.1%</td>
+            <td>
+              <div class="cost-bar">
+                <div class="cost-fill" style="width:11.1%;background:#ff9500;"></div>
+              </div>
+            </td>
+            <td><span style="color:#ff3b30;font-weight:600;">1건</span></td>
+          </tr>
+          <tr style="background:#f0f4ff;font-weight:700;">
+            <td>합계</td>
+            <td style="color:#0071e3;font-size:15px;">₩76,800</td>
+            <td>100%</td>
+            <td>
+              <div class="cost-bar">
+                <div class="cost-fill" style="width:58.9%;background:#0071e3;"></div>
+                <div class="cost-fill" style="width:30.1%;background:#34c759;margin-left:-1px;"></div>
+                <div class="cost-fill" style="width:11.1%;background:#ff9500;margin-left:-1px;"></div>
+              </div>
+            </td>
+            <td style="color:#ff3b30;">2건</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<!-- List View (리스트 뷰) -->
+<div class="list-container" id="listView">
+  <div style="padding:24px;">
+
+    <!-- 문서 요약 (동일) -->
+    <div style="display:flex;gap:16px;margin-bottom:24px;">
+      <div style="background:#fff;border:1px solid #e5e5e7;border-radius:10px;padding:16px;flex:1;">
+        <div style="font-size:11px;color:#86868b;margin-bottom:4px;">E.O. NO.</div>
+        <div style="font-size:14px;font-weight:600;">EO-2024-1201</div>
+      </div>
+      <div style="background:#fff;border:1px solid #e5e5e7;border-radius:10px;padding:16px;flex:1;">
+        <div style="font-size:11px;color:#86868b;margin-bottom:4px;">품번 / 품명</div>
+        <div style="font-size:14px;font-weight:600;">HL-2024-001 · COMPLETE ASSY-HEAD LINING</div>
+      </div>
+      <div style="background:#fff;border:1px solid #e5e5e7;border-radius:10px;padding:16px;flex:1;">
+        <div style="font-size:11px;color:#86868b;margin-bottom:4px;">협력사 / 담당자</div>
+        <div style="font-size:14px;font-weight:600;">대한(주) · 김철수</div>
+      </div>
+      <div style="background:#fff;border:1px solid #e5e5e7;border-radius:10px;padding:16px;flex:0 0 140px;">
+        <div style="font-size:11px;color:#86868b;margin-bottom:4px;">생산원가</div>
+        <div style="font-size:18px;font-weight:700;color:#0071e3;">₩76,800</div>
+      </div>
+    </div>
+
+    <!-- 재료비 -->
+    <div class="list-group">
+      <div class="std-group-header">
+        <div class="std-group-title">
+          <span class="std-group-icon" style="background:#e8f4fd;color:#0071e3;">Ⅰ</span>
+          재료비
+        </div>
+        <div class="std-group-summary">
+          <span class="std-summary-value">₩45,200</span>
+          <span class="std-summary-pct">58.9%</span>
+          <span class="badge badge-error" style="font-size:10px;">이상치 1</span>
+        </div>
+      </div>
+      <!-- Header -->
+      <div class="list-row list-row-header">
+        <div></div>
+        <div>구분</div>
+        <div>품명</div>
+        <div>규격</div>
+        <div>단위</div>
+        <div>수량</div>
+        <div>단가</div>
+        <div>금액</div>
+        <div>비율</div>
+        <div>신뢰도</div>
+        <div>상태</div>
+      </div>
+      <!-- SUBSTRATE (has children) -->
+      <div class="list-row" onclick="toggleAccordion(this)">
+        <div><button class="accordion-toggle" data-target="sub-substrate">▶</button></div>
+        <div>원자재</div>
+        <div class="std-cell-name">SUBSTRATE (기재) <span class="has-sub">📎 하위 견적서</span></div>
+        <div>1200×800×3T</div>
+        <div>EA</div>
+        <div>1</div>
+        <div>18,500</div>
+        <div style="font-weight:600;">18,500</div>
+        <div>24.1%</div>
+        <div><div class="mini-confidence"><div class="mini-bar" style="width:95%;background:#34c759;"></div></div><span style="font-size:10px;">95%</span></div>
+        <div><span class="badge badge-ok">정상</span></div>
+      </div>
+      <div class="accordion-children" id="sub-substrate">
+        <!-- Sub header -->
+        <div class="list-row list-row-header">
+          <div></div>
+          <div>구분</div>
+          <div>품명</div>
+          <div>규격</div>
+          <div>단위</div>
+          <div>수량</div>
+          <div>단가</div>
+          <div>금액</div>
+          <div>비율</div>
+          <div>신뢰도</div>
+          <div>상태</div>
+        </div>
+        <div class="list-row">
+          <div><button class="accordion-toggle no-child">▶</button></div>
+          <div style="color:#86868b;">재료</div>
+          <div><span class="child-connector">└</span>BASE MATERIAL</div>
+          <div>PP+GF30</div>
+          <div>KG</div>
+          <div>2.4</div>
+          <div>5,000</div>
+          <div>12,000</div>
+          <div>15.6%</div>
+          <div><div class="mini-confidence"><div class="mini-bar" style="width:94%;background:#34c759;"></div></div><span style="font-size:10px;">94%</span></div>
+          <div><span class="badge badge-ok">정상</span></div>
+        </div>
+        <div class="list-row">
+          <div><button class="accordion-toggle no-child">▶</button></div>
+          <div style="color:#86868b;">재료</div>
+          <div><span class="child-connector">└</span>FOAM LAYER</div>
+          <div>PU 5mm</div>
+          <div>M²</div>
+          <div>1.0</div>
+          <div>3,200</div>
+          <div>3,200</div>
+          <div>4.2%</div>
+          <div><div class="mini-confidence"><div class="mini-bar" style="width:93%;background:#34c759;"></div></div><span style="font-size:10px;">93%</span></div>
+          <div><span class="badge badge-ok">정상</span></div>
+        </div>
+        <div class="list-row">
+          <div><button class="accordion-toggle no-child">▶</button></div>
+          <div style="color:#86868b;">가공</div>
+          <div><span class="child-connector">└</span>압출 성형</div>
+          <div></div>
+          <div>회</div>
+          <div>1</div>
+          <div>6,500</div>
+          <div>6,500</div>
+          <div>8.5%</div>
+          <div><div class="mini-confidence"><div class="mini-bar" style="width:94%;background:#34c759;"></div></div><span style="font-size:10px;">94%</span></div>
+          <div><span class="badge badge-ok">정상</span></div>
+        </div>
+        <div class="list-row" style="background:#f0f4ff;font-weight:600;">
+          <div></div>
+          <div></div>
+          <div>SUBSTRATE 소계</div>
+          <div></div>
+          <div></div>
+          <div></div>
+          <div></div>
+          <div style="color:#0071e3;">21,700</div>
+          <div>28.3%</div>
+          <div></div>
+          <div></div>
+        </div>
+      </div>
+
+      <!-- SKIN (anomaly, no children) -->
+      <div class="list-row anomaly-row">
+        <div><button class="accordion-toggle no-child">▶</button></div>
+        <div>원자재</div>
+        <div class="std-cell-name">SKIN (표피재) <span class="anomaly-icon">⚠️</span></div>
+        <div>PVC 0.8mm</div>
+        <div>M²</div>
+        <div>1.2</div>
+        <div>18,917</div>
+        <div style="font-weight:600;color:#ff3b30;">22,700</div>
+        <div>29.6%</div>
+        <div><div class="mini-confidence"><div class="mini-bar" style="width:75%;background:#ff9500;"></div></div><span style="font-size:10px;color:#ff9500;">75%</span></div>
+        <div><span class="badge badge-error">이상치</span></div>
+      </div>
+
+      <!-- ADHESIVE (no children) -->
+      <div class="list-row">
+        <div><button class="accordion-toggle no-child">▶</button></div>
+        <div>원자재</div>
+        <div class="std-cell-name">ADHESIVE (접착제)</div>
+        <div>WATER BASE</div>
+        <div>KG</div>
+        <div>0.5</div>
+        <div>4,400</div>
+        <div style="font-weight:600;">2,200</div>
+        <div>2.9%</div>
+        <div><div class="mini-confidence"><div class="mini-bar" style="width:98%;background:#34c759;"></div></div><span style="font-size:10px;">98%</span></div>
+        <div><span class="badge badge-ok">정상</span></div>
+      </div>
+
+      <!-- CLIP -->
+      <div class="list-row">
+        <div><button class="accordion-toggle no-child">▶</button></div>
+        <div>부자재</div>
+        <div class="std-cell-name">CLIP</div>
+        <div>PA66</div>
+        <div>EA</div>
+        <div>12</div>
+        <div>75</div>
+        <div>900</div>
+        <div>1.2%</div>
+        <div><div class="mini-confidence"><div class="mini-bar" style="width:98%;background:#34c759;"></div></div><span style="font-size:10px;">98%</span></div>
+        <div><span class="badge badge-ok">정상</span></div>
+      </div>
+
+      <!-- PACKING -->
+      <div class="list-row">
+        <div><button class="accordion-toggle no-child">▶</button></div>
+        <div>부자재</div>
+        <div class="std-cell-name">PACKING (포장재)</div>
+        <div>골판지</div>
+        <div>SET</div>
+        <div>1</div>
+        <div>900</div>
+        <div>900</div>
+        <div>1.2%</div>
+        <div><div class="mini-confidence"><div class="mini-bar" style="width:98%;background:#34c759;"></div></div><span style="font-size:10px;">98%</span></div>
+        <div><span class="badge badge-ok">정상</span></div>
+      </div>
+    </div>
+
+    <!-- 가공비 -->
+    <div class="list-group">
+      <div class="std-group-header">
+        <div class="std-group-title">
+          <span class="std-group-icon" style="background:#e8fde8;color:#34c759;">Ⅱ</span>
+          가공비
+        </div>
+        <div class="std-group-summary">
+          <span class="std-summary-value">₩23,100</span>
+          <span class="std-summary-pct">30.1%</span>
+        </div>
+      </div>
+      <div class="list-row list-row-header">
+        <div></div>
+        <div>공정</div>
+        <div>공정명</div>
+        <div>규격</div>
+        <div>단위</div>
+        <div>수량</div>
+        <div>단가</div>
+        <div>금액</div>
+        <div>비율</div>
+        <div>신뢰도</div>
+        <div>상태</div>
+      </div>
+      <div class="list-row">
+        <div><button class="accordion-toggle no-child">▶</button></div>
+        <div>성형</div>
+        <div>프레스 성형</div>
+        <div></div>
+        <div>회</div>
+        <div>1</div>
+        <div>8,500</div>
+        <div style="font-weight:600;">8,500</div>
+        <div>11.1%</div>
+        <div><div class="mini-confidence"><div class="mini-bar" style="width:96%;background:#34c759;"></div></div><span style="font-size:10px;">96%</span></div>
+        <div><span class="badge badge-ok">정상</span></div>
+      </div>
+      <div class="list-row">
+        <div><button class="accordion-toggle no-child">▶</button></div>
+        <div>접착</div>
+        <div>접착 공정</div>
+        <div></div>
+        <div>회</div>
+        <div>1</div>
+        <div>6,200</div>
+        <div style="font-weight:600;">6,200</div>
+        <div>8.1%</div>
+        <div><div class="mini-confidence"><div class="mini-bar" style="width:94%;background:#34c759;"></div></div><span style="font-size:10px;">94%</span></div>
+        <div><span class="badge badge-ok">정상</span></div>
+      </div>
+      <div class="list-row">
+        <div><button class="accordion-toggle no-child">▶</button></div>
+        <div>후처리</div>
+        <div>트리밍</div>
+        <div></div>
+        <div>회</div>
+        <div>1</div>
+        <div>5,400</div>
+        <div style="font-weight:600;">5,400</div>
+        <div>7.0%</div>
+        <div><div class="mini-confidence"><div class="mini-bar" style="width:92%;background:#34c759;"></div></div><span style="font-size:10px;">92%</span></div>
+        <div><span class="badge badge-ok">정상</span></div>
+      </div>
+      <div class="list-row">
+        <div><button class="accordion-toggle no-child">▶</button></div>
+        <div>검사</div>
+        <div>검사/포장</div>
+        <div></div>
+        <div>회</div>
+        <div>1</div>
+        <div>3,000</div>
+        <div style="font-weight:600;">3,000</div>
+        <div>3.9%</div>
+        <div><div class="mini-confidence"><div class="mini-bar" style="width:90%;background:#34c759;"></div></div><span style="font-size:10px;">90%</span></div>
+        <div><span class="badge badge-ok">정상</span></div>
+      </div>
+    </div>
+
+    <!-- 제경비 -->
+    <div class="list-group">
+      <div class="std-group-header">
+        <div class="std-group-title">
+          <span class="std-group-icon" style="background:#fde8e8;color:#ff3b30;">Ⅲ</span>
+          제경비
+        </div>
+        <div class="std-group-summary">
+          <span class="std-summary-value">₩8,500</span>
+          <span class="std-summary-pct">11.1%</span>
+          <span class="badge badge-error" style="font-size:10px;">이상치 1</span>
+        </div>
+      </div>
+      <div class="list-row list-row-header">
+        <div></div>
+        <div>구분</div>
+        <div>항목</div>
+        <div colspan="4"></div>
+        <div></div>
+        <div></div>
+        <div></div>
+        <div>금액</div>
+        <div>비율</div>
+        <div>신뢰도</div>
+        <div>상태</div>
+      </div>
+      <div class="list-row">
+        <div><button class="accordion-toggle no-child">▶</button></div>
+        <div>감가상각</div>
+        <div>감가상각비</div>
+        <div></div>
+        <div></div>
+        <div></div>
+        <div></div>
+        <div style="font-weight:600;">3,200</div>
+        <div>4.2%</div>
+        <div><div class="mini-confidence"><div class="mini-bar" style="width:90%;background:#34c759;"></div></div><span style="font-size:10px;">90%</span></div>
+        <div><span class="badge badge-ok">정상</span></div>
+      </div>
+      <div class="list-row">
+        <div><button class="accordion-toggle no-child">▶</button></div>
+        <div>유틸리티</div>
+        <div>전력비</div>
+        <div></div>
+        <div></div>
+        <div></div>
+        <div></div>
+        <div style="font-weight:600;">2,800</div>
+        <div>3.6%</div>
+        <div><div class="mini-confidence"><div class="mini-bar" style="width:88%;background:#34c759;"></div></div><span style="font-size:10px;">88%</span></div>
+        <div><span class="badge badge-ok">정상</span></div>
+      </div>
+      <div class="list-row anomaly-row">
+        <div><button class="accordion-toggle no-child">▶</button></div>
+        <div>기타</div>
+        <div>기타 경비 <span class="anomaly-icon">⚠️</span></div>
+        <div></div>
+        <div></div>
+        <div></div>
+        <div></div>
+        <div style="font-weight:600;color:#ff3b30;">2,500</div>
+        <div>3.3%</div>
+        <div><div class="mini-confidence"><div class="mini-bar" style="width:72%;background:#ff9500;"></div></div><span style="font-size:10px;color:#ff9500;">72%</span></div>
+        <div><span class="badge badge-error">이상치</span></div>
+      </div>
+    </div>
+
+    <!-- 소계 -->
+    <div class="list-group">
+      <div class="std-group-header std-total-header">
+        <div class="std-group-title">
+          <span class="std-group-icon" style="background:#1d1d1f;color:#fff;">Σ</span>
+          소계 (생산원가)
+        </div>
+        <div class="std-group-summary">
+          <span class="std-summary-value" style="font-size:18px;color:#0071e3;">₩76,800</span>
+          <span class="std-summary-pct">100%</span>
+        </div>
+      </div>
+      <table class="std-table">
+        <thead>
+          <tr>
+            <th>구분</th>
+            <th style="width:120px;">금액</th>
+            <th style="width:80px;">비율</th>
+            <th style="width:200px;">구성</th>
+            <th style="width:80px;">이상치</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="font-weight:600;">Ⅰ. 재료비</td>
+            <td style="font-weight:600;">₩45,200</td>
+            <td>58.9%</td>
+            <td><div class="cost-bar"><div class="cost-fill" style="width:58.9%;background:#0071e3;"></div></div></td>
+            <td><span style="color:#ff3b30;font-weight:600;">1건</span></td>
+          </tr>
+          <tr>
+            <td style="font-weight:600;">Ⅱ. 가공비</td>
+            <td style="font-weight:600;">₩23,100</td>
+            <td>30.1%</td>
+            <td><div class="cost-bar"><div class="cost-fill" style="width:30.1%;background:#34c759;"></div></div></td>
+            <td><span style="color:#86868b;">0건</span></td>
+          </tr>
+          <tr>
+            <td style="font-weight:600;">Ⅲ. 제경비</td>
+            <td style="font-weight:600;">₩8,500</td>
+            <td>11.1%</td>
+            <td><div class="cost-bar"><div class="cost-fill" style="width:11.1%;background:#ff9500;"></div></div></td>
+            <td><span style="color:#ff3b30;font-weight:600;">1건</span></td>
+          </tr>
+          <tr style="background:#f0f4ff;font-weight:700;">
+            <td>합계</td>
+            <td style="color:#0071e3;font-size:15px;">₩76,800</td>
+            <td>100%</td>
+            <td><div class="cost-bar"><div class="cost-fill" style="width:58.9%;background:#0071e3;"></div><div class="cost-fill" style="width:30.1%;background:#34c759;"></div><div class="cost-fill" style="width:11.1%;background:#ff9500;"></div></div></td>
+            <td style="color:#ff3b30;">2건</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<!-- Canvas (관계도 뷰) -->
+<div class="canvas-container" id="graphView">
+  <div class="graph">
+
+    <!-- SVG Connections -->
+    <svg class="connections" viewBox="0 0 1500 900">
+      <!-- Root → SUBSTRATE -->
+      <path class="connection-line" d="M 620,155 C 620,230 230,230 230,300" />
+      <!-- Root → SKIN -->
+      <path class="connection-line anomaly" d="M 620,155 C 620,230 680,230 680,300" />
+      <!-- Root → ADHESIVE -->
+      <path class="connection-line" d="M 620,155 C 620,230 1130,230 1130,300" />
+      <!-- SUBSTRATE → Sub BOM -->
+      <path class="connection-line" d="M 230,440 C 230,510 200,510 200,570" />
+    </svg>
+
+    <!-- Root Node -->
+    <div class="node root" style="left: 490px; top: 20px;">
+      <div class="node-header">
+        <span class="node-type root-type">완제품</span>
+        <div class="node-badge">
+          <span class="badge badge-error">이상치 2</span>
+        </div>
+      </div>
+      <div class="node-title">COMPLETE ASSY-HEAD LINING</div>
+      <div class="node-subtitle">HL-2024-001 · 대한(주)</div>
+      <div class="node-stats">
+        <div class="node-stat">
+          <div class="stat-label">재료비</div>
+          <div class="stat-value">₩45,200</div>
+        </div>
+        <div class="node-stat">
+          <div class="stat-label">가공비</div>
+          <div class="stat-value">₩23,100</div>
+        </div>
+        <div class="node-stat">
+          <div class="stat-label">제경비</div>
+          <div class="stat-value">₩8,500</div>
+        </div>
+        <div class="node-stat">
+          <div class="stat-label">생산원가</div>
+          <div class="stat-value" style="color:#0071e3;">₩76,800</div>
+        </div>
+      </div>
+      <div class="node-footer">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span style="font-size:11px;color:#86868b;">신뢰도</span>
+          <div class="confidence-bar"><div class="confidence-fill high"></div></div>
+          <span style="font-size:11px;font-weight:600;">92%</span>
+        </div>
+        <span class="node-action">상세보기 →</span>
+      </div>
+      <div class="expand-btn">▼</div>
+    </div>
+
+    <!-- Child Node 1: SUBSTRATE -->
+    <div class="node" style="left: 100px; top: 300px;">
+      <div class="node-header">
+        <span class="node-type sub-type">원자재</span>
+        <div class="node-badge">
+          <span class="badge badge-ok">정상</span>
+        </div>
+      </div>
+      <div class="node-title">SUBSTRATE (기재)</div>
+      <div class="node-subtitle">SUB-001 · 하위 견적서 있음</div>
+      <div class="node-stats">
+        <div class="node-stat">
+          <div class="stat-label">재료비</div>
+          <div class="stat-value">₩18,500</div>
+        </div>
+        <div class="node-stat">
+          <div class="stat-label">가공비</div>
+          <div class="stat-value">₩12,300</div>
+        </div>
+        <div class="node-stat">
+          <div class="stat-label">제경비</div>
+          <div class="stat-value">₩4,200</div>
+        </div>
+        <div class="node-stat">
+          <div class="stat-label">소계</div>
+          <div class="stat-value">₩35,000</div>
+        </div>
+      </div>
+      <div class="node-footer">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span style="font-size:11px;color:#86868b;">신뢰도</span>
+          <div class="confidence-bar"><div class="confidence-fill high"></div></div>
+          <span style="font-size:11px;font-weight:600;">95%</span>
+        </div>
+        <span class="node-action">상세보기 →</span>
+      </div>
+      <div class="expand-btn">▼</div>
+      <!-- Tooltip on hover -->
+      <div class="tooltip">
+        <div class="tooltip-row"><span class="tooltip-label">파싱 항목</span><span>12건</span></div>
+        <div class="tooltip-row"><span class="tooltip-label">이상치</span><span>0건</span></div>
+        <div class="tooltip-row"><span class="tooltip-label">하위 견적서</span><span>1개</span></div>
+      </div>
+    </div>
+
+    <!-- Child Node 2: SKIN (with anomaly) -->
+    <div class="node has-anomaly" style="left: 550px; top: 300px;">
+      <div class="node-header">
+        <span class="node-type sub-type">원자재</span>
+        <div class="node-badge">
+          <span class="badge badge-error">이상치 2</span>
+        </div>
+      </div>
+      <div class="node-title">SKIN (표피재)</div>
+      <div class="node-subtitle">SKN-002</div>
+      <div class="node-stats">
+        <div class="node-stat">
+          <div class="stat-label">재료비</div>
+          <div class="stat-value" style="color:#ff3b30;">₩22,700 ⚠️</div>
+        </div>
+        <div class="node-stat">
+          <div class="stat-label">가공비</div>
+          <div class="stat-value">₩8,400</div>
+        </div>
+        <div class="node-stat">
+          <div class="stat-label">제경비</div>
+          <div class="stat-value" style="color:#ff3b30;">₩3,100 ⚠️</div>
+        </div>
+        <div class="node-stat">
+          <div class="stat-label">소계</div>
+          <div class="stat-value">₩34,200</div>
+        </div>
+      </div>
+      <div class="node-footer">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span style="font-size:11px;color:#86868b;">신뢰도</span>
+          <div class="confidence-bar"><div class="confidence-fill mid"></div></div>
+          <span style="font-size:11px;font-weight:600;color:#ff9500;">75%</span>
+        </div>
+        <span class="node-action">상세보기 →</span>
+      </div>
+    </div>
+
+    <!-- Child Node 3: ADHESIVE -->
+    <div class="node" style="left: 1000px; top: 300px;">
+      <div class="node-header">
+        <span class="node-type sub-type">원자재</span>
+        <div class="node-badge">
+          <span class="badge badge-ok">정상</span>
+        </div>
+      </div>
+      <div class="node-title">ADHESIVE (접착제)</div>
+      <div class="node-subtitle">ADH-003 · 단순 자재</div>
+      <div class="node-stats">
+        <div class="node-stat">
+          <div class="stat-label">재료비</div>
+          <div class="stat-value">₩3,200</div>
+        </div>
+        <div class="node-stat">
+          <div class="stat-label">가공비</div>
+          <div class="stat-value">₩1,800</div>
+        </div>
+        <div class="node-stat">
+          <div class="stat-label">제경비</div>
+          <div class="stat-value">₩900</div>
+        </div>
+        <div class="node-stat">
+          <div class="stat-label">소계</div>
+          <div class="stat-value">₩5,900</div>
+        </div>
+      </div>
+      <div class="node-footer">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span style="font-size:11px;color:#86868b;">신뢰도</span>
+          <div class="confidence-bar"><div class="confidence-fill high"></div></div>
+          <span style="font-size:11px;font-weight:600;">98%</span>
+        </div>
+        <span class="node-action">상세보기 →</span>
+      </div>
+    </div>
+
+    <!-- Grandchild: SUBSTRATE Sub-BOM -->
+    <div class="node" style="left: 70px; top: 570px; width: 260px;">
+      <div class="node-header">
+        <span class="node-type sub-type">하위 견적서</span>
+        <div class="node-badge">
+          <span class="badge badge-ok">정상</span>
+        </div>
+      </div>
+      <div class="node-title">SUBSTRATE 원자재 견적서</div>
+      <div class="node-subtitle">SUB-BOM-001 · 2단계</div>
+      <div class="node-stats">
+        <div class="node-stat">
+          <div class="stat-label">재료비</div>
+          <div class="stat-value">₩12,000</div>
+        </div>
+        <div class="node-stat">
+          <div class="stat-label">가공비</div>
+          <div class="stat-value">₩6,500</div>
+        </div>
+      </div>
+      <div class="node-footer">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span style="font-size:11px;color:#86868b;">신뢰도</span>
+          <div class="confidence-bar"><div class="confidence-fill high"></div></div>
+          <span style="font-size:11px;font-weight:600;">94%</span>
+        </div>
+        <span class="node-action">상세보기 →</span>
+      </div>
+    </div>
+
+    <!-- Annotation -->
+    <div class="annotation" style="left: 870px; top: 240px;">
+      이상치 감지: SKIN 재료비가 과거 견적 대비 35% 높음. 제경비 계산식 오류 의심.
+    </div>
+
+  </div>
+</div>
+
+<!-- Legend -->
+<div class="legend">
+  <div class="legend-item">
+    <div class="legend-dot normal"></div>
+    <span>정상</span>
+  </div>
+  <div class="legend-item">
+    <div class="legend-dot warning"></div>
+    <span>확인 필요</span>
+  </div>
+  <div class="legend-item">
+    <div class="legend-dot error"></div>
+    <span>이상치</span>
+  </div>
+  <div class="legend-item">
+    <span style="color:#86868b;">── 정상 연결</span>
+  </div>
+  <div class="legend-item">
+    <span style="color:#ff3b30;">- - - 이상치 연결</span>
+  </div>
+</div>
+
+<!-- Zoom Toolbar -->
+<div class="canvas-toolbar">
+  <button class="toolbar-btn" title="확대">+</button>
+  <button class="toolbar-btn" title="축소">−</button>
+  <button class="toolbar-btn" title="전체보기">⊡</button>
+  <button class="toolbar-btn" title="접기/펼치기">⊟</button>
+</div>
+
+<!-- Minimap -->
+<div class="minimap">
+  <div class="minimap-label">전체 구조</div>
+  <svg viewBox="0 0 180 90" style="width:100%;height:80px;">
+    <rect x="70" y="5" width="40" height="15" rx="3" fill="#0071e3" opacity="0.3"/>
+    <rect x="15" y="40" width="35" height="12" rx="3" fill="#34c759" opacity="0.3"/>
+    <rect x="70" y="40" width="35" height="12" rx="3" fill="#ff3b30" opacity="0.3"/>
+    <rect x="125" y="40" width="35" height="12" rx="3" fill="#34c759" opacity="0.3"/>
+    <rect x="5" y="70" width="30" height="10" rx="3" fill="#34c759" opacity="0.2"/>
+    <line x1="90" y1="20" x2="32" y2="40" stroke="#d2d2d7" stroke-width="1"/>
+    <line x1="90" y1="20" x2="87" y2="40" stroke="#ff3b30" stroke-width="1" stroke-dasharray="2 1"/>
+    <line x1="90" y1="20" x2="142" y2="40" stroke="#d2d2d7" stroke-width="1"/>
+    <line x1="32" y1="52" x2="20" y2="70" stroke="#d2d2d7" stroke-width="1"/>
+    <!-- viewport indicator -->
+    <rect x="0" y="0" width="160" height="80" rx="3" fill="none" stroke="#0071e3" stroke-width="1.5" opacity="0.5"/>
+  </svg>
+</div>
+
+</div><!-- /verificationPage -->
+
+</div><!-- /main-wrapper -->
+
+<!-- Excel Popup -->
+<div class="popup-overlay" id="excelPopup">
+  <div class="popup">
+    <div class="popup-header">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <h2>📄 원본 견적서 — HEAD_LINING_원가계산서.xlsx</h2>
+        <span style="font-size:11px;color:#86868b;background:#f0f0f2;padding:2px 8px;border-radius:4px;">Sheet 1 of 2</span>
+      </div>
+      <div class="popup-header-right">
+        <span style="font-size:11px;color:#86868b;">하이라이트된 셀: 매핑된 항목</span>
+        <button class="popup-close" onclick="closePopup()">✕</button>
+      </div>
+    </div>
+    <div class="popup-toolbar">
+      <div class="popup-toolbar-left">
+        <div class="popup-tab active">원가계산서</div>
+        <div class="popup-tab">자재명세</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <span>확대/축소:</span>
+        <button class="btn" style="padding:2px 8px;font-size:11px;" onclick="zoomExcel(-1)">−</button>
+        <span id="zoomLevel" style="font-size:12px;font-weight:600;">100%</span>
+        <button class="btn" style="padding:2px 8px;font-size:11px;" onclick="zoomExcel(1)">+</button>
+      </div>
+    </div>
+    <div class="popup-body">
+      <div class="excel-wrapper" id="excelWrapper">
+        <table class="excel-table" id="excelTable">
+          <thead>
+            <tr>
+              <th></th>
+              <th>A</th>
+              <th>B</th>
+              <th>C</th>
+              <th>D</th>
+              <th>E</th>
+              <th>F</th>
+              <th>G</th>
+              <th>H</th>
+              <th>I</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Row 1: Title -->
+            <tr>
+              <td class="row-header">1</td>
+              <td colspan="9" class="cell-merged" style="font-size:14px;">원 가 계 산 서</td>
+            </tr>
+            <!-- Row 2: Empty -->
+            <tr>
+              <td class="row-header">2</td>
+              <td class="cell-empty"></td>
+              <td class="cell-empty"></td>
+              <td class="cell-empty"></td>
+              <td class="cell-empty"></td>
+              <td class="cell-empty"></td>
+              <td class="cell-empty"></td>
+              <td class="cell-empty"></td>
+              <td class="cell-empty"></td>
+              <td class="cell-empty"></td>
+            </tr>
+            <!-- Row 3: Header info -->
+            <tr>
+              <td class="row-header">3</td>
+              <td style="font-weight:600;">E.O. NO.</td>
+              <td class="cell-highlight-green">EO-2024-1201 <span class="mapping-tag mapped">매핑</span></td>
+              <td class="cell-empty"></td>
+              <td style="font-weight:600;">작성일자</td>
+              <td class="cell-highlight-green">2024-11-25 <span class="mapping-tag mapped">매핑</span></td>
+              <td class="cell-empty"></td>
+              <td style="font-weight:600;">협력사</td>
+              <td colspan="2" class="cell-highlight-green">대한(주) <span class="mapping-tag mapped">매핑</span></td>
+            </tr>
+            <!-- Row 4: Part info -->
+            <tr>
+              <td class="row-header">4</td>
+              <td style="font-weight:600;">품번</td>
+              <td class="cell-highlight-green">HL-2024-001 <span class="mapping-tag mapped">매핑</span></td>
+              <td class="cell-empty"></td>
+              <td style="font-weight:600;">품명</td>
+              <td colspan="3" class="cell-highlight-green">COMPLETE ASSY-HEAD LINING <span class="mapping-tag mapped">매핑</span></td>
+              <td style="font-weight:600;">담당자</td>
+              <td class="cell-highlight-green">김철수 <span class="mapping-tag mapped">매핑</span></td>
+            </tr>
+            <!-- Row 5: Empty -->
+            <tr>
+              <td class="row-header">5</td>
+              <td class="cell-empty"></td>
+              <td class="cell-empty"></td>
+              <td class="cell-empty"></td>
+              <td class="cell-empty"></td>
+              <td class="cell-empty"></td>
+              <td class="cell-empty"></td>
+              <td class="cell-empty"></td>
+              <td class="cell-empty"></td>
+              <td class="cell-empty"></td>
+            </tr>
+            <!-- Row 6: Table header -->
+            <tr>
+              <td class="row-header">6</td>
+              <td style="font-weight:600;background:#e8edf3;">구분</td>
+              <td style="font-weight:600;background:#e8edf3;">품명</td>
+              <td style="font-weight:600;background:#e8edf3;">규격</td>
+              <td style="font-weight:600;background:#e8edf3;">단위</td>
+              <td style="font-weight:600;background:#e8edf3;">수량</td>
+              <td style="font-weight:600;background:#e8edf3;">단가</td>
+              <td style="font-weight:600;background:#e8edf3;">금액</td>
+              <td style="font-weight:600;background:#e8edf3;">비율(%)</td>
+              <td style="font-weight:600;background:#e8edf3;">비고</td>
+            </tr>
+            <!-- Row 7: 재료비 header -->
+            <tr>
+              <td class="row-header">7</td>
+              <td colspan="2" class="cell-merged" style="background:#eef3ff;">Ⅰ. 재료비</td>
+              <td class="cell-empty"></td>
+              <td class="cell-empty"></td>
+              <td class="cell-empty"></td>
+              <td class="cell-empty"></td>
+              <td class="cell-highlight-green" style="font-weight:600;">45,200 <span class="mapping-tag mapped">매핑</span></td>
+              <td>58.9%</td>
+              <td class="cell-empty"></td>
+            </tr>
+            <!-- Row 8 -->
+            <tr>
+              <td class="row-header">8</td>
+              <td>원자재</td>
+              <td class="cell-highlight">SUBSTRATE (기재) <span class="mapping-tag mapped">매핑</span></td>
+              <td>1200×800×3T</td>
+              <td>EA</td>
+              <td>1</td>
+              <td>18,500</td>
+              <td class="cell-highlight-green">18,500</td>
+              <td>24.1%</td>
+              <td class="cell-empty"></td>
+            </tr>
+            <!-- Row 9 -->
+            <tr>
+              <td class="row-header">9</td>
+              <td>원자재</td>
+              <td class="cell-highlight-red">SKIN (표피재) <span class="mapping-tag anomaly">이상치</span></td>
+              <td>PVC 0.8mm</td>
+              <td>M²</td>
+              <td>1.2</td>
+              <td>18,917</td>
+              <td class="cell-highlight-red" style="font-weight:600;">22,700 <span class="mapping-tag anomaly">⚠️</span></td>
+              <td>29.6%</td>
+              <td style="color:#ff3b30;font-size:11px;">과거 대비 +35%</td>
+            </tr>
+            <!-- Row 10 -->
+            <tr>
+              <td class="row-header">10</td>
+              <td>원자재</td>
+              <td class="cell-highlight">ADHESIVE (접착제) <span class="mapping-tag mapped">매핑</span></td>
+              <td>WATER BASE</td>
+              <td>KG</td>
+              <td>0.5</td>
+              <td>4,400</td>
+              <td class="cell-highlight-green">2,200</td>
+              <td>2.9%</td>
+              <td class="cell-empty"></td>
+            </tr>
+            <!-- Row 11 -->
+            <tr>
+              <td class="row-header">11</td>
+              <td>부자재</td>
+              <td>CLIP</td>
+              <td>PA66</td>
+              <td>EA</td>
+              <td>12</td>
+              <td>75</td>
+              <td>900</td>
+              <td>1.2%</td>
+              <td class="cell-empty"></td>
+            </tr>
+            <!-- Row 12 -->
+            <tr>
+              <td class="row-header">12</td>
+              <td>부자재</td>
+              <td>PACKING</td>
+              <td>골판지</td>
+              <td>SET</td>
+              <td>1</td>
+              <td>900</td>
+              <td>900</td>
+              <td>1.2%</td>
+              <td class="cell-empty"></td>
+            </tr>
+            <!-- Row 13: Empty -->
+            <tr>
+              <td class="row-header">13</td>
+              <td class="cell-empty"></td>
+              <td class="cell-empty"></td>
+              <td class="cell-empty"></td>
+              <td class="cell-empty"></td>
+              <td class="cell-empty"></td>
+              <td class="cell-empty"></td>
+              <td class="cell-empty"></td>
+              <td class="cell-empty"></td>
+              <td class="cell-empty"></td>
+            </tr>
+            <!-- Row 14: 가공비 -->
+            <tr>
+              <td class="row-header">14</td>
+              <td colspan="2" class="cell-merged" style="background:#eef3ff;">Ⅱ. 가공비</td>
+              <td class="cell-empty"></td>
+              <td class="cell-empty"></td>
+              <td class="cell-empty"></td>
+              <td class="cell-empty"></td>
+              <td class="cell-highlight-green" style="font-weight:600;">23,100 <span class="mapping-tag mapped">매핑</span></td>
+              <td>30.1%</td>
+              <td class="cell-empty"></td>
+            </tr>
+            <!-- Row 15 -->
+            <tr>
+              <td class="row-header">15</td>
+              <td></td>
+              <td>프레스 성형</td>
+              <td class="cell-empty"></td>
+              <td>회</td>
+              <td>1</td>
+              <td>8,500</td>
+              <td>8,500</td>
+              <td>11.1%</td>
+              <td class="cell-empty"></td>
+            </tr>
+            <!-- Row 16 -->
+            <tr>
+              <td class="row-header">16</td>
+              <td></td>
+              <td>접착 공정</td>
+              <td class="cell-empty"></td>
+              <td>회</td>
+              <td>1</td>
+              <td>6,200</td>
+              <td>6,200</td>
+              <td>8.1%</td>
+              <td class="cell-empty"></td>
+            </tr>
+            <!-- Row 17 -->
+            <tr>
+              <td class="row-header">17</td>
+              <td></td>
+              <td>트리밍</td>
+              <td class="cell-empty"></td>
+              <td>회</td>
+              <td>1</td>
+              <td>5,400</td>
+              <td>5,400</td>
+              <td>7.0%</td>
+              <td class="cell-empty"></td>
+            </tr>
+            <!-- Row 18 -->
+            <tr>
+              <td class="row-header">18</td>
+              <td></td>
+              <td>검사/포장</td>
+              <td class="cell-empty"></td>
+              <td>회</td>
+              <td>1</td>
+              <td>3,000</td>
+              <td>3,000</td>
+              <td>3.9%</td>
+              <td class="cell-empty"></td>
+            </tr>
+            <!-- Row 19: Empty -->
+            <tr>
+              <td class="row-header">19</td>
+              <td class="cell-empty"></td>
+              <td class="cell-empty"></td>
+              <td class="cell-empty"></td>
+              <td class="cell-empty"></td>
+              <td class="cell-empty"></td>
+              <td class="cell-empty"></td>
+              <td class="cell-empty"></td>
+              <td class="cell-empty"></td>
+              <td class="cell-empty"></td>
+            </tr>
+            <!-- Row 20: 제경비 -->
+            <tr>
+              <td class="row-header">20</td>
+              <td colspan="2" class="cell-merged" style="background:#eef3ff;">Ⅲ. 제경비</td>
+              <td class="cell-empty"></td>
+              <td class="cell-empty"></td>
+              <td class="cell-empty"></td>
+              <td class="cell-empty"></td>
+              <td class="cell-highlight-red" style="font-weight:600;">8,500 <span class="mapping-tag anomaly">⚠️</span></td>
+              <td>11.1%</td>
+              <td style="color:#ff3b30;font-size:11px;">계산식 불일치</td>
+            </tr>
+            <!-- Row 21 -->
+            <tr>
+              <td class="row-header">21</td>
+              <td></td>
+              <td>감가상각비</td>
+              <td class="cell-empty"></td>
+              <td class="cell-empty"></td>
+              <td class="cell-empty"></td>
+              <td class="cell-empty"></td>
+              <td>3,200</td>
+              <td>4.2%</td>
+              <td class="cell-empty"></td>
+            </tr>
+            <!-- Row 22 -->
+            <tr>
+              <td class="row-header">22</td>
+              <td></td>
+              <td>전력비</td>
+              <td class="cell-empty"></td>
+              <td class="cell-empty"></td>
+              <td class="cell-empty"></td>
+              <td class="cell-empty"></td>
+              <td>2,800</td>
+              <td>3.6%</td>
+              <td class="cell-empty"></td>
+            </tr>
+            <!-- Row 23 -->
+            <tr>
+              <td class="row-header">23</td>
+              <td></td>
+              <td>기타 경비</td>
+              <td class="cell-empty"></td>
+              <td class="cell-empty"></td>
+              <td class="cell-empty"></td>
+              <td class="cell-empty"></td>
+              <td>2,500</td>
+              <td>3.3%</td>
+              <td class="cell-empty"></td>
+            </tr>
+            <!-- Row 24: Empty -->
+            <tr>
+              <td class="row-header">24</td>
+              <td class="cell-empty"></td>
+              <td class="cell-empty"></td>
+              <td class="cell-empty"></td>
+              <td class="cell-empty"></td>
+              <td class="cell-empty"></td>
+              <td class="cell-empty"></td>
+              <td class="cell-empty"></td>
+              <td class="cell-empty"></td>
+              <td class="cell-empty"></td>
+            </tr>
+            <!-- Row 25: Total -->
+            <tr style="background:#f0f4ff;">
+              <td class="row-header">25</td>
+              <td colspan="2" class="cell-merged" style="font-size:13px;background:#dce6f7;">합계 (생산원가)</td>
+              <td class="cell-empty"></td>
+              <td class="cell-empty"></td>
+              <td class="cell-empty"></td>
+              <td class="cell-empty"></td>
+              <td class="cell-highlight-green" style="font-weight:700;font-size:13px;">76,800 <span class="mapping-tag mapped">매핑</span></td>
+              <td style="font-weight:700;">100%</td>
+              <td class="cell-empty"></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <!-- Footer legend -->
+    <div class="highlight-legend">
+      <div class="hl-item"><div class="hl-dot hl-mapped"></div><span>매핑 완료</span></div>
+      <div class="hl-item"><div class="hl-dot hl-selected"></div><span>선택된 항목</span></div>
+      <div class="hl-item"><div class="hl-dot hl-anomaly"></div><span>이상치 감지</span></div>
+      <span style="margin-left:auto;">셀 클릭 시 좌측 표준 데이터와 연동됩니다</span>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Open popup
+  function openPopup() {
+    document.getElementById('excelPopup').classList.add('active');
+  }
+  // Close popup
+  function closePopup() {
+    document.getElementById('excelPopup').classList.remove('active');
+  }
+  // Close on overlay click
+  document.getElementById('excelPopup').addEventListener('click', function(e) {
+    if (e.target === this) closePopup();
+  });
+  // ESC to close
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closePopup();
+  });
+
+  // Bind "원본보기" button
+  document.querySelector('.btn[style*="원본보기"]') ||
+  document.querySelectorAll('.btn').forEach(function(btn) {
+    if (btn.textContent.includes('원본보기')) {
+      btn.addEventListener('click', openPopup);
+    }
+  });
+
+  // Also bind all "상세보기" links in nodes
+  document.querySelectorAll('.node-action').forEach(function(link) {
+    link.addEventListener('click', openPopup);
+  });
+
+  // View tab switching
+  document.querySelectorAll('.view-tab').forEach(function(tab) {
+    tab.addEventListener('click', function() {
+      document.querySelectorAll('.view-tab').forEach(t => t.classList.remove('active'));
+      this.classList.add('active');
+      const label = this.textContent.trim();
+      const graphView = document.getElementById('graphView');
+      const stdView = document.getElementById('standardView');
+      const legend = document.querySelector('.legend');
+      const minimap = document.querySelector('.minimap');
+      const toolbar = document.querySelector('.canvas-toolbar');
+
+      var listView = document.getElementById('listView');
+
+      stdView.style.display = 'none';
+      graphView.style.display = 'none';
+      listView.style.display = 'none';
+      if (legend) legend.style.display = 'none';
+      if (minimap) minimap.style.display = 'none';
+      if (toolbar) toolbar.style.display = 'none';
+
+      if (label === '표준') {
+        stdView.style.display = 'block';
+      } else if (label === '관계도') {
+        graphView.style.display = 'block';
+        if (legend) legend.style.display = 'flex';
+        if (minimap) minimap.style.display = 'block';
+        if (toolbar) toolbar.style.display = 'flex';
+      } else if (label === '리스트') {
+        listView.style.display = 'block';
+      }
+    });
+  });
+
+  // Page switching
+  function switchPage(page) {
+    var parsingPage = document.getElementById('parsingPage');
+    var verificationPage = document.getElementById('verificationPage');
+    var header = document.querySelector('.header');
+    var statusBar = document.querySelector('.status-bar');
+
+    var insightPage = document.getElementById('insightPage');
+
+    parsingPage.style.display = 'none';
+    verificationPage.style.display = 'none';
+    insightPage.style.display = 'none';
+    insightPage.classList.remove('active');
+    header.style.display = 'none';
+    statusBar.style.display = 'none';
+
+    if (page === 'parsing') {
+      parsingPage.style.display = 'block';
+    } else if (page === 'verification') {
+      verificationPage.style.display = 'block';
+      header.style.display = 'flex';
+      statusBar.style.display = 'flex';
+    } else if (page === 'insight') {
+      insightPage.style.display = 'flex';
+      insightPage.classList.add('active');
+    }
+
+    // Update sidebar active
+    document.querySelectorAll('.sidebar-item').forEach(function(item) {
+      item.classList.remove('active');
+      if (item.getAttribute('data-page') === page) item.classList.add('active');
+    });
+
+    // Close sidebar
+    document.getElementById('sidebar').classList.remove('expanded');
+    document.getElementById('sidebarOverlay').classList.remove('active');
+  }
+
+  // Drawer
+  function openDrawer(type) {
+    var drawer = document.getElementById('detailDrawer');
+    // Hide all states
+    document.querySelectorAll('#detailDrawer > div').forEach(d => d.style.display = 'none');
+    // Show target
+    var mapping = {
+      'extracting': 'drawer-extracting',
+      'complete': 'drawer-complete',
+      'complete2': 'drawer-complete',
+      'failed': 'drawer-failed',
+      'analyzed': 'drawer-complete'
+    };
+    var target = document.getElementById(mapping[type] || 'drawer-complete');
+    if (target) target.style.display = 'flex';
+    drawer.classList.add('open');
+    document.getElementById('drawerOverlay').style.display = 'block';
+  }
+  function closeDrawer() {
+    document.getElementById('detailDrawer').classList.remove('open');
+    document.getElementById('drawerOverlay').style.display = 'none';
+  }
+
+  // File filter
+  function filterFiles(status) {
+    document.querySelectorAll('.status-card').forEach(c => c.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+    document.querySelectorAll('.file-row').forEach(function(row) {
+      if (status === 'all' || row.getAttribute('data-status') === status) {
+        row.style.display = '';
+      } else {
+        row.style.display = 'none';
+      }
+    });
+  }
+
+  // Chat functions
+  function sendChat() {
+    var input = document.getElementById('chatInput');
+    var text = input.value.trim();
+    if (!text) return;
+    var messages = document.getElementById('chatMessages');
+    messages.innerHTML += '<div class="chat-msg user"><div class="chat-avatar user-avatar">HY</div><div><div class="chat-bubble">' + text + '</div><div class="chat-meta">방금</div></div></div>';
+    input.value = '';
+    messages.scrollTop = messages.scrollHeight;
+    // Simulate AI typing
+    setTimeout(function() {
+      messages.innerHTML += '<div class="chat-msg ai"><div class="chat-avatar ai-avatar">AI</div><div><div class="chat-bubble">분석 중입니다... 잠시만 기다려주세요. ⏳</div><div class="chat-meta">방금 · 분석중</div></div></div>';
+      messages.scrollTop = messages.scrollHeight;
+    }, 800);
+  }
+  function sendSuggestion(el) {
+    var text = el.querySelector('.insight-suggestion-text').textContent;
+    document.getElementById('chatInput').value = text;
+    sendChat();
+  }
+  // Enter to send
+  document.addEventListener('DOMContentLoaded', function() {
+    var chatInput = document.getElementById('chatInput');
+    if (chatInput) {
+      chatInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') sendChat();
+      });
+    }
+  });
+
+  // Sidebar toggle
+  function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('expanded');
+    document.getElementById('sidebarOverlay').classList.toggle('active');
+  }
+
+  // Accordion toggle
+  function toggleAccordion(row) {
+    var btn = row.querySelector('.accordion-toggle');
+    if (!btn || btn.classList.contains('no-child')) return;
+    var targetId = btn.getAttribute('data-target');
+    var children = document.getElementById(targetId);
+    if (children) {
+      children.classList.toggle('open');
+      btn.classList.toggle('open');
+    }
+  }
+
+  // Zoom
+  let zoom = 100;
+  function zoomExcel(dir) {
+    zoom = Math.max(60, Math.min(150, zoom + dir * 10));
+    document.getElementById('excelTable').style.transform = 'scale(' + (zoom/100) + ')';
+    document.getElementById('excelTable').style.transformOrigin = 'top left';
+    document.getElementById('zoomLevel').textContent = zoom + '%';
+  }
+</script>
+
+</body>
+</html>

@@ -6,21 +6,156 @@
 <title>견적서 관계도 뷰 - 와이어프레임</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root { --sidebar-width: 260px; }
   body { font-family: 'Pretendard', -apple-system, sans-serif; background: #f5f5f7; color: #1d1d1f; }
+  body.sidebar-collapsed { --sidebar-width: 60px; }
+
+  /* ===== Login & 2FA Screens ===== */
+  .login-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    z-index: 9999;
+    display: flex; align-items: center; justify-content: center;
+    transition: opacity 0.4s ease;
+  }
+  .login-overlay.hidden { opacity: 0; pointer-events: none; }
+  .login-card {
+    background: #fff;
+    border-radius: 20px;
+    padding: 48px 40px;
+    width: 420px;
+    max-width: 90vw;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    text-align: center;
+  }
+  .login-logo {
+    width: 56px; height: 56px;
+    background: #0071e3;
+    border-radius: 14px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 24px; color: #fff; font-weight: 700;
+    margin-bottom: 20px;
+  }
+  .login-title {
+    font-size: 22px; font-weight: 700; color: #1d1d1f;
+    margin-bottom: 6px;
+  }
+  .login-subtitle {
+    font-size: 14px; color: #86868b;
+    margin-bottom: 32px;
+  }
+  .login-field {
+    width: 100%; margin-bottom: 16px; text-align: left;
+  }
+  .login-field label {
+    display: block; font-size: 13px; font-weight: 600;
+    color: #1d1d1f; margin-bottom: 6px;
+  }
+  .login-field input {
+    width: 100%; padding: 12px 14px;
+    border: 1.5px solid #d2d2d7; border-radius: 10px;
+    font-size: 15px; color: #1d1d1f;
+    outline: none; transition: border-color 0.2s;
+  }
+  .login-field input:focus { border-color: #0071e3; }
+  .login-field input::placeholder { color: #a1a1a6; }
+  .login-btn {
+    width: 100%; padding: 14px;
+    background: #0071e3; color: #fff;
+    border: none; border-radius: 12px;
+    font-size: 16px; font-weight: 600;
+    cursor: pointer; transition: background 0.2s;
+    margin-top: 8px;
+  }
+  .login-btn:hover { background: #0077ED; }
+  .login-btn:active { background: #005BB5; }
+  .login-error {
+    color: #ff3b30; font-size: 13px;
+    margin-top: 8px; display: none;
+  }
+  .login-footer {
+    margin-top: 24px; font-size: 12px; color: #a1a1a6;
+  }
+
+  /* 2FA */
+  .otp-wrap { display: none; }
+  .otp-wrap.active { display: block; }
+  .login-form-wrap { display: block; }
+  .login-form-wrap.hidden { display: none; }
+
+  .otp-phone-info {
+    font-size: 14px; color: #1d1d1f;
+    margin-bottom: 24px; line-height: 1.6;
+  }
+  .otp-phone-info strong { color: #0071e3; }
+  .otp-inputs {
+    display: flex; gap: 10px; justify-content: center;
+    margin-bottom: 24px;
+  }
+  .otp-inputs input {
+    width: 48px; height: 56px;
+    text-align: center; font-size: 22px; font-weight: 700;
+    border: 1.5px solid #d2d2d7; border-radius: 10px;
+    outline: none; transition: border-color 0.2s;
+  }
+  .otp-inputs input:focus { border-color: #0071e3; }
+  .otp-timer {
+    font-size: 13px; color: #86868b;
+    margin-bottom: 20px;
+  }
+  .otp-timer span { color: #0071e3; font-weight: 600; }
+  .otp-resend {
+    background: none; border: none;
+    color: #0071e3; font-size: 13px;
+    cursor: pointer; text-decoration: underline;
+    margin-bottom: 24px; display: inline-block;
+  }
 
   /* Sidebar - LNB */
   .sidebar {
     position: fixed;
     top: 0; left: 0; bottom: 0;
-    width: 260px;
+    width: var(--sidebar-width);
     background: #1d1d1f;
     color: #fff;
     z-index: 50;
-    transform: translateX(-260px);
-    transition: transform 0.3s ease;
+    transform: translateX(0);
+    transition: width 0.3s ease;
     display: flex;
     flex-direction: column;
     overflow: hidden;
+  }
+  .sidebar.collapsed {
+    width: 60px;
+  }
+  .sidebar.collapsed .sidebar-logo-text,
+  .sidebar.collapsed .sidebar-item-text,
+  .sidebar.collapsed .sidebar-item-badge,
+  .sidebar.collapsed .sidebar-user-info,
+  .sidebar.collapsed .sidebar-section {
+    display: none;
+  }
+  .sidebar.collapsed .sidebar-header {
+    justify-content: center;
+    padding: 16px 0;
+    gap: 0;
+  }
+  .sidebar.collapsed .sidebar-logo-icon { display: none; }
+  .sidebar.collapsed .sidebar-item {
+    justify-content: center;
+    padding: 12px 0;
+    border-left: none;
+  }
+  .sidebar.collapsed .sidebar-footer {
+    justify-content: center;
+    padding: 14px 0;
+  }
+  .sidebar.collapsed .sidebar-toggle .toggle-text { display: none; }
+
+  /* Main content offset */
+  .main-wrapper {
+    margin-left: var(--sidebar-width);
+    transition: margin-left 0.3s ease;
   }
   .sidebar.expanded { transform: translateX(0); }
 
@@ -1020,13 +1155,13 @@
     overflow-y: auto;
   }
   .parsing-header-area {
-    padding: 32px 40px 0;
+    padding: 20px 24px 0;
   }
-  .parsing-title { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
-  .parsing-subtitle { font-size: 14px; color: #86868b; margin-bottom: 28px; }
+  .parsing-title { font-size: 20px; font-weight: 700; margin-bottom: 2px; }
+  .parsing-subtitle { font-size: 13px; color: #86868b; margin-bottom: 16px; }
 
   .parsing-search {
-    display: flex; gap: 10px; margin-bottom: 24px;
+    display: flex; gap: 10px; margin-bottom: 16px;
   }
   .parsing-search-input {
     flex: 1; padding: 10px 16px; border: 1px solid #e5e5e7; border-radius: 8px;
@@ -1040,7 +1175,7 @@
 
   /* Status cards */
   .status-cards {
-    display: flex; gap: 12px; margin-bottom: 28px; padding: 0 40px;
+    display: flex; gap: 12px; margin-bottom: 16px; padding: 0 24px;
   }
   .status-card {
     flex: 1; background: #fff; border: 1px solid #e5e5e7; border-radius: 10px;
@@ -1058,7 +1193,7 @@
   .sc-analyzing .status-card-count { color: #af52de; }
 
   /* File list */
-  .file-list { padding: 0 40px 40px; }
+  .file-list { padding: 0 24px 24px; }
   .file-table {
     width: 100%; border-collapse: collapse; background: #fff;
     border: 1px solid #e5e5e7; border-radius: 10px; overflow: hidden;
@@ -1078,6 +1213,7 @@
   .file-status {
     display: inline-flex; align-items: center; gap: 5px;
     font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 12px;
+    white-space: nowrap; min-width: 80px; justify-content: center;
   }
   .fs-extracting { background: #fff3cd; color: #b8860b; }
   .fs-validating { background: #cce5ff; color: #004085; }
@@ -1101,8 +1237,8 @@
 
   /* Upload area */
   .upload-area {
-    border: 2px dashed #d2d2d7; border-radius: 12px; padding: 48px;
-    text-align: center; margin: 0 40px 28px; background: #fff;
+    border: 2px dashed #d2d2d7; border-radius: 12px; padding: 32px;
+    text-align: center; margin: 0 24px 16px; background: #fff;
     cursor: pointer; transition: all 0.2s;
   }
   .upload-area:hover { border-color: #0071e3; background: #f8fbff; }
@@ -1226,16 +1362,133 @@
     padding-left: 80px;
     background: #f2f5fc;
   }
+  /* ===== Model Management Page ===== */
+  .model-page {
+    display: none;
+    min-height: 100vh;
+    background: #f5f5f7;
+    padding: 20px 24px;
+  }
+  .model-page-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .model-page-title { font-size: 20px; font-weight: 700; }
+  .model-page-sub { font-size: 13px; color: #86868b; margin-top: 2px; }
+  .model-add-btn {
+    padding: 10px 20px; background: #0071e3; color: #fff;
+    border: none; border-radius: 10px; font-size: 14px; font-weight: 600;
+    cursor: pointer; display: flex; align-items: center; gap: 6px;
+  }
+  .model-add-btn:hover { background: #0077ED; }
+
+  .formula-list { display: flex; flex-direction: column; gap: 12px; }
+  .formula-card {
+    background: #fff; border: 1px solid #e5e5e7; border-radius: 12px;
+    padding: 20px 24px; transition: box-shadow 0.2s;
+  }
+  .formula-card:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+  .formula-card-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .formula-name {
+    font-size: 15px; font-weight: 700; color: #1d1d1f;
+  }
+  .formula-badge {
+    font-size: 11px; padding: 2px 10px; border-radius: 10px;
+    font-weight: 600;
+  }
+  .formula-badge.core { background: #0071e3; color: #fff; }
+  .formula-badge.sub { background: #e8f0fe; color: #0071e3; }
+  .formula-badge.rate { background: #fff3cd; color: #b8860b; }
+
+  .formula-expression {
+    background: #f5f5f7; border: 1px solid #e5e5e7; border-radius: 8px;
+    padding: 12px 16px; font-family: 'SF Mono', 'Consolas', monospace;
+    font-size: 14px; color: #1d1d1f; margin-bottom: 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .formula-expression code {
+    flex: 1; background: none; font-family: inherit; font-size: inherit;
+  }
+  .formula-desc {
+    font-size: 13px; color: #86868b; line-height: 1.5;
+  }
+  .formula-actions {
+    display: flex; gap: 8px; margin-top: 12px; justify-content: flex-end;
+  }
+  .formula-action-btn {
+    padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 600;
+    cursor: pointer; border: 1px solid #e5e5e7; background: #fff; color: #1d1d1f;
+    transition: all 0.15s;
+  }
+  .formula-action-btn:hover { background: #f5f5f7; }
+  .formula-action-btn.edit { color: #0071e3; border-color: #0071e3; }
+  .formula-action-btn.delete { color: #ff3b30; border-color: #ff3b30; }
+  .formula-action-btn.delete:hover { background: #fff5f5; }
+
+  .formula-var-list {
+    display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px;
+  }
+  .formula-var {
+    font-size: 11px; padding: 2px 8px; border-radius: 6px;
+    background: #f0f6ff; color: #0071e3; font-weight: 500;
+  }
 </style>
 </head>
 <body>
 
+<!-- ===== Login Screen ===== -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-card">
+    <div class="login-logo">HD</div>
+    <div class="login-title">견적서 분석 시스템</div>
+    <div class="login-subtitle">현대모비스 구매원가 AI 분석 플랫폼</div>
+
+    <!-- 1차 인증: ID/PW -->
+    <div class="login-form-wrap" id="loginForm">
+      <div class="login-field">
+        <label>아이디</label>
+        <input type="text" id="loginId" placeholder="사번 또는 아이디 입력" autocomplete="off">
+      </div>
+      <div class="login-field">
+        <label>비밀번호</label>
+        <input type="password" id="loginPw" placeholder="비밀번호 입력">
+      </div>
+      <button class="login-btn" onclick="handleLogin()">로그인</button>
+      <div class="login-error" id="loginError">아이디 또는 비밀번호를 입력해주세요.</div>
+      <div class="login-footer">© 2026 현대모비스 · 구매본부</div>
+    </div>
+
+    <!-- 2차 인증: 휴대폰 OTP -->
+    <div class="otp-wrap" id="otpForm">
+      <div class="otp-phone-info">
+        <strong id="otpPhone">010-****-5678</strong> 로<br>인증번호가 발송되었습니다.
+      </div>
+      <div class="otp-inputs" id="otpInputs">
+        <input type="text" maxlength="1" inputmode="numeric" autofocus>
+        <input type="text" maxlength="1" inputmode="numeric">
+        <input type="text" maxlength="1" inputmode="numeric">
+        <input type="text" maxlength="1" inputmode="numeric">
+        <input type="text" maxlength="1" inputmode="numeric">
+        <input type="text" maxlength="1" inputmode="numeric">
+      </div>
+      <div class="otp-timer">남은 시간 <span id="otpTimerText">03:00</span></div>
+      <button class="otp-resend" onclick="resendOtp()">인증번호 재발송</button>
+      <button class="login-btn" onclick="handleOtp()">인증 확인</button>
+      <div class="login-error" id="otpError">인증번호를 입력해주세요.</div>
+      <div class="login-footer">© 2026 현대모비스 · 구매본부</div>
+    </div>
+  </div>
+</div>
+
 <!-- Sidebar LNB -->
 <div class="sidebar" id="sidebar">
   <div class="sidebar-header">
-    <div class="sidebar-logo-icon">AI</div>
+    <div class="sidebar-logo-icon" style="cursor:pointer;">AI</div>
     <span class="sidebar-logo-text">구매원가 AI</span>
-    <button style="margin-left:auto;width:28px;height:28px;border-radius:6px;border:none;background:#333;color:#fff;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;" onclick="toggleSidebar()">✕</button>
+    <button id="sidebarCollapseBtn" style="margin-left:auto;width:28px;height:28px;border-radius:6px;border:none;background:#333;color:#fff;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:transform 0.3s;">«</button>
   </div>
   <nav class="sidebar-nav">
     <div class="sidebar-section">분석</div>
@@ -1258,7 +1511,7 @@
     <div class="sidebar-divider"></div>
 
     <div class="sidebar-section">관리</div>
-    <div class="sidebar-item">
+    <div class="sidebar-item" data-page="model" onclick="switchPage('model')">
       <span class="sidebar-item-icon">⚙️</span>
       <span class="sidebar-item-text">구매원가 모델관리</span>
       
@@ -1269,6 +1522,11 @@
       
     </div>
   </nav>
+  <div class="sidebar-divider"></div>
+  <div class="sidebar-item" onclick="handleLogout()" style="color:#ff6b6b;">
+    <span class="sidebar-item-icon">🚪</span>
+    <span class="sidebar-item-text">로그아웃</span>
+  </div>
   <div class="sidebar-footer">
     <div class="sidebar-avatar">HY</div>
     <div class="sidebar-user-info">
@@ -1279,10 +1537,11 @@
 </div>
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
+<div class="main-wrapper" id="mainWrapper">
+
 <!-- Header -->
 <div class="header">
   <div class="header-left">
-    <button class="hamburger" onclick="toggleSidebar()"><span></span><span></span><span></span></button>
     <span class="breadcrumb">검증 ></span>
     <h1>견적서_2026-02-10_현대모비스</h1>
   </div>
@@ -1327,12 +1586,9 @@
   </div>
 </div>
 
-<div class="main-wrapper" id="mainWrapper">
-
 <!-- Insight Studio -->
 <div class="insight-container" id="insightPage">
   <div class="insight-header-bar">
-    <button class="hamburger" onclick="toggleSidebar()"><span></span><span></span><span></span></button>
     <span class="breadcrumb" style="font-size:13px;color:#86868b;">인사이트 스튜디오</span>
   </div>
 
@@ -1441,9 +1697,168 @@
 </div>
 
 <!-- Parsing Page -->
+<!-- Model Management Page -->
+<div class="model-page" id="modelPage">
+  <div class="model-page-header">
+    <div>
+      <div class="model-page-title">구매원가 모델관리</div>
+      <div class="model-page-sub">견적서 분석에 사용되는 원가 계산 수식을 관리합니다</div>
+    </div>
+    <button class="model-add-btn" onclick="addFormula()">➕ 수식 추가</button>
+  </div>
+
+  <div class="formula-list" id="formulaList">
+    <!-- 1. 핵심 수식 -->
+    <div class="formula-card">
+      <div class="formula-card-header">
+        <span class="formula-name">구매원가</span>
+        <span class="formula-badge core">핵심</span>
+      </div>
+      <div class="formula-expression">
+        <code>구매원가 = 재료비 + 가공비 + 제경비 + 이윤</code>
+      </div>
+      <div class="formula-desc">최종 구매원가를 산출하는 기본 수식. 모든 견적서 검증의 기준이 됩니다.</div>
+      <div class="formula-var-list">
+        <span class="formula-var">재료비</span>
+        <span class="formula-var">가공비</span>
+        <span class="formula-var">제경비</span>
+        <span class="formula-var">이윤</span>
+      </div>
+      <div class="formula-actions">
+        <button class="formula-action-btn edit">✏️ 수정</button>
+        <button class="formula-action-btn delete">🗑 삭제</button>
+      </div>
+    </div>
+
+    <!-- 2. 생산원가 -->
+    <div class="formula-card">
+      <div class="formula-card-header">
+        <span class="formula-name">생산원가</span>
+        <span class="formula-badge core">핵심</span>
+      </div>
+      <div class="formula-expression">
+        <code>생산원가 = 재료비 + 가공비 + 제경비</code>
+      </div>
+      <div class="formula-desc">이윤을 제외한 순수 생산 비용. 원가 분석의 기본 단위입니다.</div>
+      <div class="formula-var-list">
+        <span class="formula-var">재료비</span>
+        <span class="formula-var">가공비</span>
+        <span class="formula-var">제경비</span>
+      </div>
+      <div class="formula-actions">
+        <button class="formula-action-btn edit">✏️ 수정</button>
+        <button class="formula-action-btn delete">🗑 삭제</button>
+      </div>
+    </div>
+
+    <!-- 3. 재료비 -->
+    <div class="formula-card">
+      <div class="formula-card-header">
+        <span class="formula-name">재료비</span>
+        <span class="formula-badge sub">하위항목</span>
+      </div>
+      <div class="formula-expression">
+        <code>재료비 = 주재료비 + 부재료비 + 외주가공비</code>
+      </div>
+      <div class="formula-desc">제품 생산에 직접 투입되는 원재료 비용의 합계.</div>
+      <div class="formula-var-list">
+        <span class="formula-var">주재료비</span>
+        <span class="formula-var">부재료비</span>
+        <span class="formula-var">외주가공비</span>
+      </div>
+      <div class="formula-actions">
+        <button class="formula-action-btn edit">✏️ 수정</button>
+        <button class="formula-action-btn delete">🗑 삭제</button>
+      </div>
+    </div>
+
+    <!-- 4. 가공비 -->
+    <div class="formula-card">
+      <div class="formula-card-header">
+        <span class="formula-name">가공비</span>
+        <span class="formula-badge sub">하위항목</span>
+      </div>
+      <div class="formula-expression">
+        <code>가공비 = 직접노무비 + 직접경비 + 간접노무비 + 간접경비</code>
+      </div>
+      <div class="formula-desc">제품을 가공·제조하는 데 소요되는 인건비 및 경비.</div>
+      <div class="formula-var-list">
+        <span class="formula-var">직접노무비</span>
+        <span class="formula-var">직접경비</span>
+        <span class="formula-var">간접노무비</span>
+        <span class="formula-var">간접경비</span>
+      </div>
+      <div class="formula-actions">
+        <button class="formula-action-btn edit">✏️ 수정</button>
+        <button class="formula-action-btn delete">🗑 삭제</button>
+      </div>
+    </div>
+
+    <!-- 5. 제경비 -->
+    <div class="formula-card">
+      <div class="formula-card-header">
+        <span class="formula-name">제경비</span>
+        <span class="formula-badge sub">하위항목</span>
+      </div>
+      <div class="formula-expression">
+        <code>제경비 = 가공비 × 제경비율</code>
+      </div>
+      <div class="formula-desc">가공비 대비 일정 비율로 산출되는 제조 간접비.</div>
+      <div class="formula-var-list">
+        <span class="formula-var">가공비</span>
+        <span class="formula-var">제경비율</span>
+      </div>
+      <div class="formula-actions">
+        <button class="formula-action-btn edit">✏️ 수정</button>
+        <button class="formula-action-btn delete">🗑 삭제</button>
+      </div>
+    </div>
+
+    <!-- 6. 이윤 -->
+    <div class="formula-card">
+      <div class="formula-card-header">
+        <span class="formula-name">이윤</span>
+        <span class="formula-badge rate">비율</span>
+      </div>
+      <div class="formula-expression">
+        <code>이윤 = 생산원가 × 이윤율</code>
+      </div>
+      <div class="formula-desc">공급자의 적정 이윤. 일반적으로 생산원가의 일정 비율로 산정.</div>
+      <div class="formula-var-list">
+        <span class="formula-var">생산원가</span>
+        <span class="formula-var">이윤율</span>
+      </div>
+      <div class="formula-actions">
+        <button class="formula-action-btn edit">✏️ 수정</button>
+        <button class="formula-action-btn delete">🗑 삭제</button>
+      </div>
+    </div>
+
+    <!-- 7. 주재료비 -->
+    <div class="formula-card">
+      <div class="formula-card-header">
+        <span class="formula-name">주재료비</span>
+        <span class="formula-badge sub">하위항목</span>
+      </div>
+      <div class="formula-expression">
+        <code>주재료비 = Σ(자재단가 × 소요량 × (1 + 손실율))</code>
+      </div>
+      <div class="formula-desc">BOM(자재명세서) 기준 주요 원자재의 투입 비용 합계.</div>
+      <div class="formula-var-list">
+        <span class="formula-var">자재단가</span>
+        <span class="formula-var">소요량</span>
+        <span class="formula-var">손실율</span>
+      </div>
+      <div class="formula-actions">
+        <button class="formula-action-btn edit">✏️ 수정</button>
+        <button class="formula-action-btn delete">🗑 삭제</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="parsing-container" id="parsingPage">
-  <div style="padding:16px 40px 0;display:flex;align-items:center;gap:12px;">
-    <button class="hamburger" onclick="toggleSidebar()"><span></span><span></span><span></span></button>
+  <div style="padding:12px 24px 0;display:flex;align-items:center;gap:12px;">
     <span class="breadcrumb" style="font-size:13px;color:#86868b;">파싱</span>
   </div>
   <div class="parsing-header-area">
@@ -1515,7 +1930,6 @@
           <td style="color:#86868b;">—</td>
           <td>2026-02-19</td>
           <td class="file-actions">
-            <button class="file-action-btn disabled">분석이력보기</button>
             <button class="file-action-btn disabled">문서상세보기</button>
           </td>
         </tr>
@@ -1532,7 +1946,6 @@
           <td><span style="color:#ff3b30;font-weight:600;">2건</span></td>
           <td>2026-02-18</td>
           <td class="file-actions">
-            <button class="file-action-btn">분석이력보기</button>
             <button class="file-action-btn primary" onclick="event.stopPropagation(); switchPage('verification')">문서상세보기</button>
           </td>
         </tr>
@@ -1549,7 +1962,6 @@
           <td><span style="color:#86868b;">0건</span></td>
           <td>2026-02-17</td>
           <td class="file-actions">
-            <button class="file-action-btn">분석이력보기</button>
             <button class="file-action-btn primary">문서상세보기</button>
           </td>
         </tr>
@@ -1583,7 +1995,6 @@
           <td><span style="color:#86868b;">0건</span></td>
           <td>2026-02-15</td>
           <td class="file-actions">
-            <button class="file-action-btn">분석이력보기</button>
             <button class="file-action-btn primary">문서상세보기</button>
           </td>
         </tr>
@@ -1685,7 +2096,6 @@
       </div>
     </div>
     <div class="drawer-footer">
-      <button class="btn btn-outline" style="flex:1;text-align:center;padding:10px;">분석이력보기</button>
       <button class="btn btn-primary" style="flex:1;text-align:center;padding:10px;" onclick="closeDrawer(); switchPage('verification')">문서상세보기</button>
     </div>
   </div>
@@ -3221,10 +3631,13 @@
 
     var insightPage = document.getElementById('insightPage');
 
+    var modelPage = document.getElementById('modelPage');
+
     parsingPage.style.display = 'none';
     verificationPage.style.display = 'none';
     insightPage.style.display = 'none';
     insightPage.classList.remove('active');
+    modelPage.style.display = 'none';
     header.style.display = 'none';
     statusBar.style.display = 'none';
 
@@ -3237,6 +3650,8 @@
     } else if (page === 'insight') {
       insightPage.style.display = 'flex';
       insightPage.classList.add('active');
+    } else if (page === 'model') {
+      modelPage.style.display = 'block';
     }
 
     // Update sidebar active
@@ -3245,9 +3660,7 @@
       if (item.getAttribute('data-page') === page) item.classList.add('active');
     });
 
-    // Close sidebar
-    document.getElementById('sidebar').classList.remove('expanded');
-    document.getElementById('sidebarOverlay').classList.remove('active');
+    // Sidebar stays visible (no close needed)
   }
 
   // Drawer
@@ -3316,10 +3729,74 @@
     }
   });
 
-  // Sidebar toggle
+  // Sidebar collapse/expand toggle
+  document.addEventListener('DOMContentLoaded', function() {
+    var btn = document.getElementById('sidebarCollapseBtn');
+    if (btn) {
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        e.preventDefault();
+        var sidebar = document.getElementById('sidebar');
+        sidebar.classList.toggle('collapsed');
+        document.body.classList.toggle('sidebar-collapsed');
+        btn.textContent = sidebar.classList.contains('collapsed') ? '»' : '«';
+      });
+    }
+
+    // Collapsed 상태에서 아이콘 클릭으로 펼치기
+    var logoIcon = document.querySelector('.sidebar-logo-icon');
+    if (logoIcon) {
+      logoIcon.addEventListener('click', function() {
+        var sidebar = document.getElementById('sidebar');
+        if (sidebar.classList.contains('collapsed')) {
+          sidebar.classList.remove('collapsed');
+          document.body.classList.remove('sidebar-collapsed');
+          document.getElementById('sidebarCollapseBtn').textContent = '«';
+        }
+      });
+    }
+  });
+
+  function toggleSidebarCollapse() {
+    var sidebar = document.getElementById('sidebar');
+    var btn = document.getElementById('sidebarCollapseBtn');
+    sidebar.classList.toggle('collapsed');
+    document.body.classList.toggle('sidebar-collapsed');
+    btn.textContent = sidebar.classList.contains('collapsed') ? '»' : '«';
+  }
+
+  // Legacy toggle (hamburger) — now also collapses
   function toggleSidebar() {
-    document.getElementById('sidebar').classList.toggle('expanded');
-    document.getElementById('sidebarOverlay').classList.toggle('active');
+    toggleSidebarCollapse();
+  }
+
+  // Model management - add formula
+  function addFormula() {
+    var list = document.getElementById('formulaList');
+    var card = document.createElement('div');
+    card.className = 'formula-card';
+    card.style.border = '2px solid #0071e3';
+    card.innerHTML = '<div class="formula-card-header"><input type="text" placeholder="수식 이름 입력" style="font-size:15px;font-weight:700;border:1px solid #e5e5e7;border-radius:6px;padding:6px 10px;outline:none;flex:1;" autofocus><select style="margin-left:8px;padding:4px 8px;border:1px solid #e5e5e7;border-radius:6px;font-size:12px;"><option>핵심</option><option>하위항목</option><option>비율</option></select></div><div class="formula-expression" style="background:#fff;border:2px solid #0071e3;"><input type="text" placeholder="예: 구매원가 = 재료비 + 가공비 + 제경비" style="flex:1;border:none;outline:none;font-family:SF Mono,Consolas,monospace;font-size:14px;background:none;"></div><textarea placeholder="수식 설명을 입력하세요" style="width:100%;border:1px solid #e5e5e7;border-radius:8px;padding:10px;font-size:13px;resize:vertical;min-height:60px;outline:none;margin-bottom:8px;font-family:inherit;"></textarea><div class="formula-actions"><button class="formula-action-btn" onclick="this.closest(\'.formula-card\').remove()" style="color:#86868b;">취소</button><button class="formula-action-btn edit">💾 저장</button></div>';
+    list.insertBefore(card, list.firstChild);
+    card.querySelector('input').focus();
+    card.scrollIntoView({behavior: 'smooth', block: 'start'});
+  }
+
+  // Logout
+  function handleLogout() {
+    var overlay = document.getElementById('loginOverlay');
+    overlay.style.display = 'flex';
+    overlay.classList.remove('hidden');
+    // Reset login form
+    document.getElementById('loginForm').classList.remove('hidden');
+    document.getElementById('otpForm').classList.remove('active');
+    document.getElementById('loginId').value = '';
+    document.getElementById('loginPw').value = '';
+    document.querySelectorAll('#otpInputs input').forEach(function(inp) { inp.value = ''; });
+    document.getElementById('loginError').style.display = 'none';
+    document.getElementById('otpError').style.display = 'none';
+    // Hide main content
+    document.querySelector('.sidebar').style.visibility = 'hidden';
   }
 
   // Accordion toggle
@@ -3341,6 +3818,96 @@
     document.getElementById('excelTable').style.transform = 'scale(' + (zoom/100) + ')';
     document.getElementById('excelTable').style.transformOrigin = 'top left';
     document.getElementById('zoomLevel').textContent = zoom + '%';
+  }
+
+  // ===== Login & 2FA Logic =====
+  // Hide main content until login
+  document.addEventListener('DOMContentLoaded', function() {
+    // Initially hide everything behind login
+    document.querySelector('.sidebar').style.visibility = 'hidden';
+    document.getElementById('parsingPage').style.visibility = 'hidden';
+  });
+
+  function handleLogin() {
+    var id = document.getElementById('loginId').value.trim();
+    var pw = document.getElementById('loginPw').value.trim();
+    var err = document.getElementById('loginError');
+
+    if (!id || !pw) {
+      err.style.display = 'block';
+      err.textContent = '아이디와 비밀번호를 모두 입력해주세요.';
+      return;
+    }
+    err.style.display = 'none';
+
+    // 1차 인증 통과 → 2차 인증 화면
+    document.getElementById('loginForm').classList.add('hidden');
+    document.getElementById('otpForm').classList.add('active');
+    startOtpTimer();
+
+    // OTP 입력 자동 포커스
+    var inputs = document.querySelectorAll('#otpInputs input');
+    inputs[0].focus();
+    inputs.forEach(function(inp, i) {
+      inp.addEventListener('input', function() {
+        if (inp.value && i < inputs.length - 1) inputs[i + 1].focus();
+      });
+      inp.addEventListener('keydown', function(e) {
+        if (e.key === 'Backspace' && !inp.value && i > 0) inputs[i - 1].focus();
+      });
+    });
+  }
+
+  // Enter key for login
+  document.addEventListener('DOMContentLoaded', function() {
+    ['loginId', 'loginPw'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.addEventListener('keydown', function(e) { if (e.key === 'Enter') handleLogin(); });
+    });
+  });
+
+  var otpInterval;
+  function startOtpTimer() {
+    var seconds = 180;
+    var timerEl = document.getElementById('otpTimerText');
+    clearInterval(otpInterval);
+    otpInterval = setInterval(function() {
+      seconds--;
+      var m = Math.floor(seconds / 60);
+      var s = seconds % 60;
+      timerEl.textContent = (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+      if (seconds <= 0) clearInterval(otpInterval);
+    }, 1000);
+  }
+
+  function resendOtp() {
+    startOtpTimer();
+    alert('인증번호가 재발송되었습니다.');
+  }
+
+  function handleOtp() {
+    var inputs = document.querySelectorAll('#otpInputs input');
+    var code = '';
+    inputs.forEach(function(inp) { code += inp.value; });
+    var err = document.getElementById('otpError');
+
+    if (code.length < 6) {
+      err.style.display = 'block';
+      err.textContent = '인증번호 6자리를 모두 입력해주세요.';
+      return;
+    }
+    err.style.display = 'none';
+    clearInterval(otpInterval);
+
+    // 로그인 성공 → 메인 화면 진입
+    var overlay = document.getElementById('loginOverlay');
+    overlay.classList.add('hidden');
+    setTimeout(function() { overlay.style.display = 'none'; }, 400);
+
+    // Show main content
+    document.querySelector('.sidebar').style.visibility = 'visible';
+    document.getElementById('parsingPage').style.visibility = 'visible';
+    switchPage('parsing');
   }
 </script>
 
